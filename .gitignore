@@ -1,0 +1,38 @@
+# Local .terraform directories
+**/.terraform/*
+**/.terraform/
+*.terraform/
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude sensitive tfvars files (allow .example and .sample)
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!*.tfvars.sample
+!solution/*.tfvars
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# Temporary generated test files & archives
+*.zip
+*.tar.gz
+**/generated_*.txt
+**/test_output/
+.DS_Store
+__pycache__/

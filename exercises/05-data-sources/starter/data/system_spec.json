@@ -1,0 +1,9 @@
+{
+  "system_name": "payment-processor",
+  "version": "3.4.1",
+  "resources": {
+    "cpu_cores": 4,
+    "memory_gb": 16
+  },
+  "features": ["fraud-detection", "instant-settlement"]
+}

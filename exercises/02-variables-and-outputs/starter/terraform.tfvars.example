@@ -1,0 +1,4 @@
+environment    = "staging"
+app_port       = 9000
+enable_feature = true
+db_password    = "super_secret_p@ssw0rd!"
