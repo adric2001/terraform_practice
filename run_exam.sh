@@ -10,3 +10,4 @@ if [ "$1" == "--web" ] || [ "$1" == "-w" ]; then
 else
   python3 "$SCRIPT_DIR/exams/simulator.py"
 fi
+

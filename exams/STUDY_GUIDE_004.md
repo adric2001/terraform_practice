@@ -103,3 +103,4 @@ The 004 exam focuses on modern features introduced in Terraform 1.4 through 1.8+
 3. If any domain scores below 75%, revisit the recommended lab exercise listed in your score report.
 
 Good luck on the HashiCorp Certified: Terraform Associate (004) exam! 🚀
+
