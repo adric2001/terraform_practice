@@ -1,0 +1,361 @@
+{
+  "exam_id": 2,
+  "title": "Core Workflow & CLI Deep Dive",
+  "description": "Exhaustive testing of CLI commands, flags, init mechanics, plan serialization, log levels, and workflow edge cases.",
+  "domain_focus": "Domain 3, 4, 6",
+  "total_questions": 25,
+  "passing_percentage": 70,
+  "time_limit_minutes": 60,
+  "questions": [
+    {
+      "id": "q2_01",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "During 'terraform init', which of the following operations are performed? (Select all that apply / Choose most comprehensive)",
+      "options": [
+        "A. Initializes backend storage, downloads referenced child modules, and downloads required provider plugins.",
+        "B. Applies state modifications directly to the cloud provider.",
+        "C. Destroys all untracked resources.",
+        "D. Creates cryptographic SSH keys on the local machine."
+      ],
+      "answer": "A",
+      "explanation": "'terraform init' initializes the working directory by: 1. Configuring and initializing the backend; 2. Sourcing and installing child modules; 3. Downloading and caching provider plugins and verifying checksums against the lock file.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_02",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "You run 'terraform plan -out=tfplan.binary'. What is an important security consideration regarding this saved plan file?",
+      "options": [
+        "A. The file is automatically encrypted with the user's GPG key.",
+        "B. The plan file is stored in cleartext (binary serialized JSON) and may contain sensitive variable values or passwords.",
+        "C. The file can only be read on the same machine after running 'terraform decrypt'.",
+        "D. The plan file expires after 5 minutes."
+      ],
+      "answer": "B",
+      "explanation": "Saved plan files generated with '-out' contain the full proposed state and configuration values, which may include plaintext sensitive attributes and secrets. It must be protected with appropriate file permissions and not committed to public repositories.",
+      "recommended_exercise": "02-variables-and-outputs"
+    },
+    {
+      "id": "q2_03",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "What is the difference between running 'terraform apply' and 'terraform apply tfplan'?",
+      "options": [
+        "A. 'terraform apply tfplan' applies the exact pre-computed plan without re-prompting for confirmation or recalculating diffs, whereas 'terraform apply' calculates a new plan and prompts for interactive approval.",
+        "B. 'terraform apply tfplan' can only be executed in Terraform Cloud.",
+        "C. 'terraform apply' is faster because it skips the refresh phase.",
+        "D. There is no difference; tfplan is ignored."
+      ],
+      "answer": "A",
+      "explanation": "When given a saved plan file ('terraform apply tfplan'), Terraform does not generate a new plan or prompt for user confirmation ('yes'). It guarantees that only the exact changes evaluated when 'plan -out' was executed will be applied.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_04",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "What exit code does 'terraform plan -detailed-exitcode' return when the plan succeeded and there are infrastructural changes to apply?",
+      "options": [
+        "A. 0",
+        "B. 1",
+        "C. 2",
+        "D. 255"
+      ],
+      "answer": "C",
+      "explanation": "With '-detailed-exitcode': 0 = Succeeded with no changes; 1 = Error occurred; 2 = Succeeded with non-empty diff (changes present). This is widely used in CI/CD pipeline scripts to decide whether to prompt for approvals.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_05",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "You need to update your state to reflect out-of-band changes without modifying any real cloud resources. What command should you use in modern Terraform?",
+      "options": [
+        "A. terraform apply -refresh-only",
+        "B. terraform refresh (legacy standalone command)",
+        "C. terraform plan -force",
+        "D. terraform sync"
+      ],
+      "answer": "A",
+      "explanation": "In modern Terraform, 'terraform apply -refresh-only' inspects real infrastructure and updates the state file to match reality, presenting a plan of state-only changes for approval without making changes to real resources. The old 'terraform refresh' command is discouraged.",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q2_06",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "Under what circumstance should the '-target' option ('terraform apply -target=...') be used?",
+      "options": [
+        "A. As the standard everyday way to deploy microservices independently.",
+        "B. Solely for exceptional troubleshooting or recovery from errors where dependencies are broken.",
+        "C. To speed up daily production deployments.",
+        "D. Whenever deploying to non-default regions."
+      ],
+      "answer": "B",
+      "explanation": "HashiCorp explicitly warns that '-target' should only be used for exceptional circumstances or disaster recovery (e.g., when a dependency cycle or dead resource prevents regular plans). Regular use leads to state drift and hidden dependency failures.",
+      "recommended_exercise": "04-resource-dependencies"
+    },
+    {
+      "id": "q2_07",
+      "domain": "Domain 4: Use Terraform Outside the Core Workflow",
+      "question": "Which command checks whether HCL syntax is valid and whether internal resource references match, without querying remote cloud APIs?",
+      "options": [
+        "A. terraform init",
+        "B. terraform validate",
+        "C. terraform plan",
+        "D. terraform lint"
+      ],
+      "answer": "B",
+      "explanation": "'terraform validate' verifies syntax, variable declarations, module arguments, and attribute references in HCL files. It does not contact remote APIs or examine existing state files, making it extremely fast for pre-commit hooks.",
+      "recommended_exercise": "13-validations-and-conditions"
+    },
+    {
+      "id": "q2_08",
+      "domain": "Domain 4: Use Terraform Outside the Core Workflow",
+      "question": "Which environment variable configures verbose logging levels for the Terraform CLI?",
+      "options": [
+        "A. TERRAFORM_DEBUG",
+        "B. TF_LOG",
+        "C. HASHICORP_VERBOSE",
+        "D. TF_VERBOSITY"
+      ],
+      "answer": "B",
+      "explanation": "'TF_LOG' sets the logging level. Valid values are (in increasing verbosity): TRACE, DEBUG, INFO, WARN, ERROR, or OFF. To write logs to a file, use 'TF_LOG_PATH'.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_09",
+      "domain": "Domain 4: Use Terraform Outside the Core Workflow",
+      "question": "What is the highest verbosity logging level available in Terraform?",
+      "options": [
+        "A. ALL",
+        "B. DEBUG",
+        "C. TRACE",
+        "D. MAX"
+      ],
+      "answer": "C",
+      "explanation": "TRACE is the most verbose log level. It outputs internal engine operations, full HTTP request/response payloads to and from providers, and graph resolution steps.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_010",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "If you send a single SIGINT (Ctrl+C) to a running 'terraform apply' process, what does Terraform do?",
+      "options": [
+        "A. Immediately kills all API connections and leaves state corrupted.",
+        "B. Gracefully waits for currently in-flight resource operations to finish, saves the updated state, and then stops.",
+        "C. Immediately executes a rollback by destroying all created resources.",
+        "D. Ignores the signal completely until all plan items finish."
+      ],
+      "answer": "B",
+      "explanation": "On receiving a single SIGINT, Terraform enters a graceful shutdown: it stops starting new operations, allows in-flight provider API calls to conclude, updates the state file with completed work, and safely exits. Sending a second SIGINT forces an immediate abort with risk of state inconsistency.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_011",
+      "domain": "Domain 4: Use Terraform Outside the Core Workflow",
+      "question": "You want to test HCL expressions and evaluate functions interactively. Which Terraform CLI command opens an interactive REPL console?",
+      "options": [
+        "A. terraform repl",
+        "B. terraform console",
+        "C. terraform test -i",
+        "D. terraform eval"
+      ],
+      "answer": "B",
+      "explanation": "'terraform console' opens an interactive shell where you can evaluate functions, inspect state variables, test ternary operators, and view data source returns against the current state.",
+      "recommended_exercise": "08-builtin-functions"
+    },
+    {
+      "id": "q2_012",
+      "domain": "Domain 4: Use Terraform Outside the Core Workflow",
+      "question": "Can 'terraform console' be used to modify infrastructure or mutate resources in state?",
+      "options": [
+        "A. Yes, using the 'set' command inside the console.",
+        "B. No, 'terraform console' is strictly read-only and cannot mutate state or resources.",
+        "C. Yes, if launched with 'terraform console -write'.",
+        "D. Yes, but only for local file resources."
+      ],
+      "answer": "B",
+      "explanation": "'terraform console' provides read-only evaluation. It cannot modify real infrastructure, alter state attributes, or perform creates/updates.",
+      "recommended_exercise": "08-builtin-functions"
+    },
+    {
+      "id": "q2_013",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "You change the backend configuration block from 'local' to 's3' in your root module. What command must you run next to transfer state?",
+      "options": [
+        "A. terraform state push s3",
+        "B. terraform init -migrate-state",
+        "C. terraform plan -backend",
+        "D. terraform apply -sync"
+      ],
+      "answer": "B",
+      "explanation": "Whenever you change backend blocks, you must run 'terraform init'. Adding '-migrate-state' instructs Terraform to copy the existing state file from the prior backend to the new backend location.",
+      "recommended_exercise": "17-remote-backends-and-locking"
+    },
+    {
+      "id": "q2_014",
+      "domain": "Domain 4: Use Terraform Outside the Core Workflow",
+      "question": "A previous run was killed abruptly and left a stale state lock in DynamoDB. How can an administrator clear the lock?",
+      "options": [
+        "A. terraform unlock -all",
+        "B. terraform force-unlock <LOCK_ID>",
+        "C. terraform state rm lock",
+        "D. You must delete the S3 state file and start over."
+      ],
+      "answer": "B",
+      "explanation": "If a lock is stuck and you have verified no other process is running, you can release it using 'terraform force-unlock <LOCK_ID>', passing the Lock ID displayed in the original lock error message.",
+      "recommended_exercise": "17-remote-backends-and-locking"
+    },
+    {
+      "id": "q2_015",
+      "domain": "Domain 4: Use Terraform Outside the Core Workflow",
+      "question": "How do you extract a single raw string value of an output variable named 'api_token' without surrounding quotes in shell automation?",
+      "options": [
+        "A. terraform output -raw api_token",
+        "B. terraform output -plain api_token",
+        "C. terraform output -no-quotes api_token",
+        "D. terraform output api_token | tr -d '\"'"
+      ],
+      "answer": "A",
+      "explanation": "'terraform output -raw <NAME>' prints the raw, unquoted string value directly to standard output, making it ideal for piping into shell environment variables or file scripts.",
+      "recommended_exercise": "02-variables-and-outputs"
+    },
+    {
+      "id": "q2_016",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "What happens if a resource creation fails midway through 'terraform apply' due to an invalid cloud API parameter?",
+      "options": [
+        "A. Terraform rolls back and destroys all previously created resources from that run.",
+        "B. Successfully created resources prior to the failure are recorded in the state file; failed resources are not added.",
+        "C. The entire state file is erased.",
+        "D. Terraform pauses for 24 hours waiting for API recovery."
+      ],
+      "answer": "B",
+      "explanation": "Terraform does NOT perform automatic rollbacks on failure. Instead, it records all successfully provisioned resources in the state file so subsequent runs can resume cleanly without orphaned infrastructure.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_017",
+      "domain": "Domain 3: Understand Terraform Basics",
+      "question": "You specify provider version constraints: version = \"~> 3.2.0\". Which of the following provider versions will Terraform accept?",
+      "options": [
+        "A. 3.2.5",
+        "B. 3.3.0",
+        "C. 4.0.0",
+        "D. 3.1.9"
+      ],
+      "answer": "A",
+      "explanation": "The pessimistic constraint operator '~> 3.2.0' allows only patch updates: versions >= 3.2.0 and < 3.3.0. Version 3.2.5 falls in this range. If it had been '~> 3.2', it would have allowed up to < 4.0.0.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_018",
+      "domain": "Domain 3: Understand Terraform Basics",
+      "question": "How can you upgrade all installed providers to the newest allowed versions matching configuration constraints?",
+      "options": [
+        "A. terraform get -upgrade",
+        "B. terraform init -upgrade",
+        "C. terraform update --providers",
+        "D. Delete main.tf and re-create it"
+      ],
+      "answer": "B",
+      "explanation": "'terraform init -upgrade' checks the configured source registries for newer provider versions matching version constraints in HCL and updates '.terraform.lock.hcl'.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_019",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "Which command permanently deletes all infrastructure managed by the current configuration directory?",
+      "options": [
+        "A. terraform clean",
+        "B. terraform destroy",
+        "C. terraform state delete --all",
+        "D. rm -rf .terraform/"
+      ],
+      "answer": "B",
+      "explanation": "'terraform destroy' creates a plan to terminate and delete all resources managed by the current state file, prompting for confirmation before executing API deletions.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_020",
+      "domain": "Domain 4: Use Terraform Outside the Core Workflow",
+      "question": "You need to export your complete current state file to standard output in JSON format for analysis. Which command should you execute?",
+      "options": [
+        "A. terraform state pull",
+        "B. terraform state export",
+        "C. terraform plan -json",
+        "D. cat .terraform/state.json"
+      ],
+      "answer": "A",
+      "explanation": "'terraform state pull' fetches the current state directly from the configured backend (local or remote) and outputs raw state JSON to stdout.",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q2_021",
+      "domain": "Domain 3: Understand Terraform Basics",
+      "question": "What is the purpose of the 'plugin_cache_dir' setting in a user's CLI configuration file (~/.terraformrc)?",
+      "options": [
+        "A. It prevents Terraform from downloading plugins entirely.",
+        "B. It stores provider binaries in a single centralized folder across all projects to save disk space and network bandwidth.",
+        "C. It stores compiled HCL bytecode.",
+        "D. It accelerates DNS resolution."
+      ],
+      "answer": "B",
+      "explanation": "By default, every project downloads its own copy of provider binaries into '.terraform/providers'. Defining 'plugin_cache_dir' in '~/.terraformrc' allows multiple projects on the same machine to share cached provider binaries.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_022",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "What happens when you add '-auto-approve' to 'terraform apply'?",
+      "options": [
+        "A. Terraform bypasses plan evaluation and executes blind writes.",
+        "B. Terraform skips the interactive confirmation prompt ('Do you want to perform these actions?') and proceeds directly with the apply.",
+        "C. Terraform ignores any errors returned by the provider.",
+        "D. Terraform auto-commits the code changes to Git."
+      ],
+      "answer": "B",
+      "explanation": "'-auto-approve' instructs Terraform to skip the interactive terminal prompt asking for 'yes' before applying changes. Commonly used in CI/CD automation pipelines.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q2_023",
+      "domain": "Domain 4: Use Terraform Outside the Core Workflow",
+      "question": "Which command generates a visual representation of the Directed Acyclic Graph (DAG) for your configuration?",
+      "options": [
+        "A. terraform dag",
+        "B. terraform graph",
+        "C. terraform visualize",
+        "D. terraform tree"
+      ],
+      "answer": "B",
+      "explanation": "'terraform graph' generates a visual representation of the dependency graph in Graphviz DOT format. It can be piped into 'dot -Tpng > graph.png'.",
+      "recommended_exercise": "04-resource-dependencies"
+    },
+    {
+      "id": "q2_024",
+      "domain": "Domain 4: Use Terraform Outside the Core Workflow",
+      "question": "What occurs when you run 'terraform state rm <address>' on a live cloud database?",
+      "options": [
+        "A. Terraform sends an API request to delete the cloud database immediately.",
+        "B. Terraform stops tracking the database in state, but the live cloud database continues running untouched.",
+        "C. The database is moved to the recycle bin.",
+        "D. The command fails if the database is running."
+      ],
+      "answer": "B",
+      "explanation": "'terraform state rm' purely removes the target resource from the state file. It makes zero API calls to delete or modify the real physical resource, allowing it to become unmanaged.",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q2_025",
+      "domain": "Domain 6: Use the Core Terraform Workflow",
+      "question": "You want to run a plan that explicitly sets a variable from the command line. Which syntax is valid?",
+      "options": [
+        "A. terraform plan --var app_port=8080",
+        "B. terraform plan -var=\"app_port=8080\"",
+        "C. terraform plan -set app_port:8080",
+        "D. terraform plan /var:app_port=8080"
+      ],
+      "answer": "B",
+      "explanation": "Command line variables are supplied with '-var' flag: 'terraform plan -var=\"app_port=8080\"' or multiple '-var' flags or with a file using '-var-file=\"custom.tfvars\"'.",
+      "recommended_exercise": "02-variables-and-outputs"
+    }
+  ]
+}

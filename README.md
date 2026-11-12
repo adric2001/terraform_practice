@@ -42,6 +42,17 @@ This repository is part of the **DevOps Practice Ecosystem**. You can jump direc
 
 ---
 
+## 🎯 10 Terraform Associate (004) Practice Exams & Interactive Simulator
+
+Prepare for the official **HashiCorp Certified: Terraform Associate (004)** exam with **10 full-length practice exams (250 questions total)** featuring instant on-the-fly feedback, diagnostic scoring, and an exam readiness evaluator:
+
+* 🖥️ **Terminal CLI Simulator:** Run `./run_exam.sh` (or `python3 exams/simulator.py`) for an interactive terminal quiz with live score tracking, right/wrong feedback on the fly, and domain readiness reports.
+* 🌐 **Interactive Browser Web UI:** Open [`exams/simulator.html`](exams/simulator.html) (`open exams/simulator.html`) in any browser for study mode and 60-minute timed exam mode with zero dependencies!
+* 📚 **Official 004 Study Guide:** Read [`exams/STUDY_GUIDE_004.md`](exams/STUDY_GUIDE_004.md) for the complete 004 domain blueprint, what's new in 004, top 10 exam traps, and lab mappings.
+* 📝 **Markdown Exam Files:** Access all 10 exams with collapsible answer keys in [`exams/`](exams/README.md) ([Exam 01](exams/exam-01.md) to [Exam 10](exams/exam-10.md)).
+
+---
+
 ## 🛠️ How to Practice
 
 Every exercise is self-contained and organized into two folders:
