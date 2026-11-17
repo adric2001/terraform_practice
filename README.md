@@ -1,6 +1,18 @@
 # 🚀 Terraform Practice Suite: Zero to Production
 
-A comprehensive, hands-on curriculum of **21 progressive practice exercises** designed to take you from foundational HashiCorp Configuration Language (HCL) syntax to advanced enterprise orchestration, state refactoring, declarative imports, and native automated testing.
+A comprehensive, hands-on curriculum of **21 progressive practice exercises** and a full **Terraform Associate (004) Cloud Readiness Portal** with an in-browser code checker, timed mock exams, flashcard trainer, and cloud sync.
+
+---
+
+## 🌐 Live Cloud Practice Portal & Lab Studio
+Access the full interactive suite in your browser:
+### 👉 **[https://d1ewr9sh9xd6o.cloudfront.net](https://d1ewr9sh9xd6o.cloudfront.net)**
+
+* **🛠️ In-Browser Hands-On Lab Studio**: Solve all 21 exercises with multi-file tabs, automated real-time HCL validation, and 1-click solution copying.
+* **🎯 10 Practice Exams (250 Questions)**: Instant right/wrong feedback, question flagging, and 57-question timed mock exam with navigator grid.
+* **📅 14-Day Exam Acceleration Roadmap**: Daily guided schedule with direct 1-click exam and lab launcher buttons.
+* **🗂️ 50 High-Yield Flashcard Trainer**: Flip-card trainer covering top traps, state commands, and new 004 features.
+* **☁️ Cloud Sync & Diagnostic Progress**: AWS Cognito authentication and DynamoDB persistence tracking your readiness score and weak domains.
 
 ---
 
@@ -46,28 +58,51 @@ This repository is part of the **DevOps Practice Ecosystem**. You can jump direc
 
 Prepare for the official **HashiCorp Certified: Terraform Associate (004)** exam with **10 full-length practice exams (250 questions total)** featuring instant on-the-fly feedback, diagnostic scoring, and an exam readiness evaluator:
 
+* ☁️ **Live AWS Cloud Readiness Portal:** [**https://d1ewr9sh9xd6o.cloudfront.net**](https://d1ewr9sh9xd6o.cloudfront.net) — Full-featured cloud web app with user authentication (Cognito), persistence (DynamoDB), 14-day study sprint roadmap, 50-flashcard trainer, and in-browser Lab Studio.
 * 🖥️ **Terminal CLI Simulator:** Run `./run_exam.sh` (or `python3 exams/simulator.py`) for an interactive terminal quiz with live score tracking, right/wrong feedback on the fly, and domain readiness reports.
-* 🌐 **Interactive Browser Web UI:** Open [`exams/simulator.html`](exams/simulator.html) (`open exams/simulator.html`) in any browser for study mode and 60-minute timed exam mode with zero dependencies!
-* ☁️ **AWS Cloud Readiness Portal:** Deploy your personal exam portal to AWS with full user authentication (Amazon Cognito), progress tracking (Amazon DynamoDB), and dynamic custom weak-area drills via `./scripts/deploy_aws.sh` (or run locally with `python3 dev_server.py`).
+* 🌐 **Offline Browser Web UI:** Open [`exams/simulator.html`](exams/simulator.html) (`open exams/simulator.html`) in any browser for study mode and 60-minute timed exam mode with zero dependencies!
 * 📚 **Official 004 Study Guide:** Read [`exams/STUDY_GUIDE_004.md`](exams/STUDY_GUIDE_004.md) for the complete 004 domain blueprint, what's new in 004, top 10 exam traps, and lab mappings.
 * 📝 **Markdown Exam Files:** Access all 10 exams with collapsible answer keys in [`exams/`](exams/README.md) ([Exam 01](exams/exam-01.md) to [Exam 10](exams/exam-10.md)).
 
 ---
 
-## 🛠️ How to Practice
+## 🛠️ How to Practice the 21 Exercises
 
-Every exercise is self-contained and organized into two folders:
-- **`starter/`**: Your work area! Contains skeleton HCL files with `TODO` markers and instructions.
-- **`solution/`**: Complete reference implementation. If you get stuck or want to compare architectural approaches, check here.
+You can practice the exercises using either the web portal, the isolated local CLI sandbox, or standard local directories:
 
-### Standard Practice Workflow
+### Option 1: Web Lab Studio (Zero Setup - Recommended)
+Open [**https://d1ewr9sh9xd6o.cloudfront.net**](https://d1ewr9sh9xd6o.cloudfront.net) and click **"🛠️ Lab Studio"**:
+- Write and edit HCL code across multiple files directly in the browser.
+- Click **"🧪 Check & Validate Code"** for automated real-time verification with instant pass/fail diagnostics.
+- View reference solutions with 1-click copy into your editor.
+- Saves progress and completed labs to your cloud account!
+
+### Option 2: Isolated Terminal CLI Sandbox (`./practice.sh`)
+Practice locally in an isolated `.work/` sandbox without modifying tracked repository files or polluting git:
+```bash
+# 1. Start an exercise in an isolated .work/ workspace
+./practice.sh start 01
+
+# 2. Navigate into your sandbox and implement the solution
+cd .work/01-first-resource
+
+# 3. Verify syntax and configuration against terraform validate
+./practice.sh verify 01
+
+# 4. View official reference solution
+./practice.sh solution 01
+
+# 5. Reset your sandbox anytime
+./practice.sh reset 01
+```
+
+### Option 3: Standard Directory Practice
 1. Choose an exercise:
    ```bash
    cd exercises/01-first-resource/starter
    ```
-2. Read the exercise's `README.md` for requirements, background, and hints.
-3. Open the `.tf` files in `starter/` and implement the requested configuration.
-4. Test your configuration:
+2. Read the exercise's `README.md` for requirements and hints.
+3. Edit the `.tf` files in `starter/` and test:
    ```bash
    terraform init
    terraform fmt -check
@@ -75,12 +110,10 @@ Every exercise is self-contained and organized into two folders:
    terraform plan
    terraform apply
    ```
-5. Verify the generated resources, files, and outputs.
-6. Clean up:
+4. Clean up resources:
    ```bash
    terraform destroy -auto-approve
    ```
-7. Compare your solution with the `solution/` directory.
 
 ---
 
