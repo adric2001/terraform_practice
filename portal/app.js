@@ -991,26 +991,28 @@
   // ===========================================================================
   // Custom Exam Builder
   // ===========================================================================
-  openCustomBuilderBtn.onclick = () => customBuilderModal.style.display = "flex";
-  closeBuilderModal.onclick = () => customBuilderModal.style.display = "none";
-  cancelBuilderBtn.onclick = () => customBuilderModal.style.display = "none";
-  qCountSlider.oninput = () => qCountDisplay.innerText = qCountSlider.value;
+  if (openCustomBuilderBtn) openCustomBuilderBtn.onclick = () => { if (customBuilderModal) customBuilderModal.style.display = "flex"; };
+  if (closeBuilderModal) closeBuilderModal.onclick = () => { if (customBuilderModal) customBuilderModal.style.display = "none"; };
+  if (cancelBuilderBtn) cancelBuilderBtn.onclick = () => { if (customBuilderModal) customBuilderModal.style.display = "none"; };
+  if (qCountSlider) qCountSlider.oninput = () => { if (qCountDisplay) qCountDisplay.innerText = qCountSlider.value; };
 
-  launchCustomExamBtn.onclick = () => {
-    const count = parseInt(qCountSlider.value, 10);
-    const checked = Array.from(document.querySelectorAll(".domain-chk:checked")).map(cb => cb.value);
-    if (checked.length === 0) {
-      alert("Please select at least one domain.");
-      return;
-    }
+  if (launchCustomExamBtn) {
+    launchCustomExamBtn.onclick = () => {
+      const count = parseInt(qCountSlider ? qCountSlider.value : 15, 10);
+      const checked = Array.from(document.querySelectorAll(".domain-chk:checked")).map(cb => cb.value);
+      if (checked.length === 0) {
+        alert("Please select at least one domain.");
+        return;
+      }
 
-    const matched = allQuestions.filter(q => checked.includes(q.domain));
-    const shuffled = [...matched].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, count);
+      const matched = allQuestions.filter(q => checked.includes(q.domain));
+      const shuffled = [...matched].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, count);
 
-    customBuilderModal.style.display = "none";
-    startExam(`Custom Selected Exam (${selected.length} Questions)`, selected, false);
-  };
+      if (customBuilderModal) customBuilderModal.style.display = "none";
+      startExam(`Custom Selected Exam (${selected.length} Questions)`, selected, false);
+    };
+  }
 
   // ===========================================================================
   // Hands-On Lab Studio Engine
@@ -1365,30 +1367,36 @@
   // ===========================================================================
   // Cognito Authentication
   // ===========================================================================
-  openAuthBtn.onclick = () => {
-    authModal.style.display = "flex";
-    showTab("signIn");
-  };
+  if (openAuthBtn) {
+    openAuthBtn.onclick = () => {
+      if (authModal) authModal.style.display = "flex";
+      showTab("signIn");
+    };
+  }
 
-  closeAuthModal.onclick = () => authModal.style.display = "none";
-  tabSignIn.onclick = () => showTab("signIn");
-  tabSignUp.onclick = () => showTab("signUp");
-  tabConfirm.onclick = () => showTab("confirm");
+  if (closeAuthModal) closeAuthModal.onclick = () => { if (authModal) authModal.style.display = "none"; };
+  if (tabSignIn) tabSignIn.onclick = () => showTab("signIn");
+  if (tabSignUp) tabSignUp.onclick = () => showTab("signUp");
+  if (tabConfirm) tabConfirm.onclick = () => showTab("confirm");
 
   function showTab(tab) {
-    [tabSignIn, tabSignUp, tabConfirm].forEach(b => b.classList.remove("active"));
-    [signInForm, signUpForm, confirmForm].forEach(f => f.style.display = "none");
-    authMsg.style.display = "none";
+    [tabSignIn, tabSignUp, tabConfirm].forEach(b => { if (b) b.classList.remove("active"); });
+    [signInForm, signUpForm, confirmForm].forEach(f => { if (f) f.style.display = "none"; });
+    if (authMsg) authMsg.style.display = "none";
+    const title = document.getElementById("authModalTitle");
 
     if (tab === "signIn") {
-      tabSignIn.classList.add("active");
-      signInForm.style.display = "block";
+      if (tabSignIn) tabSignIn.classList.add("active");
+      if (signInForm) signInForm.style.display = "block";
+      if (title) title.innerText = "Sign In to Your Account";
     } else if (tab === "signUp") {
-      tabSignUp.classList.add("active");
-      signUpForm.style.display = "block";
+      if (tabSignUp) tabSignUp.classList.add("active");
+      if (signUpForm) signUpForm.style.display = "block";
+      if (title) title.innerText = "Create Your Account";
     } else if (tab === "confirm") {
-      tabConfirm.classList.add("active");
-      confirmForm.style.display = "block";
+      if (tabConfirm) tabConfirm.classList.add("active");
+      if (confirmForm) confirmForm.style.display = "block";
+      if (title) title.innerText = "Verify Email Address";
     }
   }
 
@@ -1490,12 +1498,14 @@
     }
   };
 
-  signOutBtn.onclick = () => {
-    currentUser = null;
-    localStorage.removeItem("tf_auth_user");
-    updateAuthUI();
-    syncStat.innerText = "Clean Slate 🟢";
-  };
+  if (signOutBtn) {
+    signOutBtn.onclick = () => {
+      currentUser = null;
+      localStorage.removeItem("tf_auth_user");
+      updateAuthUI();
+      if (syncStat) syncStat.innerText = "Clean Slate 🟢";
+    };
+  }
 
   function restoreAuthSession() {
     const raw = localStorage.getItem("tf_auth_user");

@@ -221,6 +221,18 @@
           </div>
           <button id="cardLaunchBtn" class="btn" style="width: 100%;">Open Flashcard Trainer</button>
         </div>
+
+        <!-- 7. Custom Exam Builder -->
+        <div class="action-card">
+          <div class="action-card-header">
+            <div class="action-card-icon">🎛️</div>
+            <div class="action-card-info">
+              <h4>Custom Exam Builder</h4>
+              <p>Filter by specific domains and configure question counts for targeted drills.</p>
+            </div>
+          </div>
+          <button id="openCustomBuilderBtn" class="btn" style="width: 100%;">Build Custom Exam</button>
+        </div>
       </div>
       
       <!-- Reset Helper Link -->
@@ -666,6 +678,59 @@
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Confirm & Activate</button>
       </form>
+    </div>
+  </div>
+
+  <!-- Custom Exam Builder Modal -->
+  <div id="customBuilderModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3>Custom Exam Builder</h3>
+        <button id="closeBuilderModal" class="modal-close">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label>Number of Questions: <strong id="qCountDisplay" style="color: var(--accent);">15</strong></label>
+        <input type="range" id="qCountSlider" min="5" max="50" step="5" value="15" style="width: 100%;">
+      </div>
+
+      <div class="form-group">
+        <label>Target Domains (Select at least one):</label>
+        <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 8px; background: #0f172a; border-radius: 8px; border: 1px solid var(--border);">
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
+            <input type="checkbox" class="domain-chk" value="Domain 1: Understand Infrastructure as Code (IaC) Concepts"> Domain 1: IaC Concepts
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
+            <input type="checkbox" class="domain-chk" value="Domain 2: Understand Terraform's Purpose"> Domain 2: Terraform's Purpose
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
+            <input type="checkbox" class="domain-chk" value="Domain 3: Understand Terraform Basics"> Domain 3: Terraform Basics
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
+            <input type="checkbox" class="domain-chk" value="Domain 4: Use Terraform Outside the Core Workflow" checked> Domain 4: Outside Core Workflow
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
+            <input type="checkbox" class="domain-chk" value="Domain 5: Interact with Terraform Modules"> Domain 5: Modules & Registries
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
+            <input type="checkbox" class="domain-chk" value="Domain 6: Use the Core Terraform Workflow"> Domain 6: Core Workflow
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
+            <input type="checkbox" class="domain-chk" value="Domain 7: Implement and Maintain State"> Domain 7: State Management
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
+            <input type="checkbox" class="domain-chk" value="Domain 8: Read, Generate, and Modify Configuration" checked> Domain 8: Configuration
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
+            <input type="checkbox" class="domain-chk" value="Domain 9: Understand Terraform Cloud/Enterprise Capabilities"> Domain 9: Cloud & Enterprise
+          </label>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+        <button id="cancelBuilderBtn" class="btn">Cancel</button>
+        <button id="launchCustomExamBtn" class="btn btn-primary">Start Exam</button>
+      </div>
     </div>
   </div>
 
