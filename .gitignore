@@ -38,3 +38,8 @@ terraform.rc
 __pycache__/
 .progress.json
 portal/config.js
+
+# Practice sandbox directories (isolated from git)
+.work/
+exercises/complete/
+exercises/**/.terraform.lock.hcl

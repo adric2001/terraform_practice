@@ -23,10 +23,11 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅ Authenticated as: $(echo "$CALLER_IDENTITY" | grep "Arn" | cut -d '"' -f 4)"
 
-# 2. Package Lambda dependencies and exam data
-echo "📦 Preparing backend data files..."
+# 2. Package Lambda dependencies, exercises, and exam data
+echo "📦 Preparing backend and exercises data files..."
 mkdir -p "$REPO_ROOT/backend/data"
 cp -r "$REPO_ROOT/exams/data/"* "$REPO_ROOT/backend/data/"
+python3 "$REPO_ROOT/scripts/build_exercises_json.py"
 
 # 3. Provision Infrastructure via Terraform
 echo "🏗️ Running Terraform in infra/..."

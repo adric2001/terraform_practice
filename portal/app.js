@@ -28,8 +28,16 @@
     questionStats: {}, // q_id -> { attempts, correct }
     domainStats: {},   // domain -> { attempts, correct }
     missedQuestions: [],
-    starredQuestions: []
+    starredQuestions: [],
+    completedLabs: []  // array of completed lab IDs
   };
+
+  // Lab Studio State
+  let allExercises = [];
+  let activeLab = null;
+  let activeLabFile = "main.tf";
+  let activeSolutionFile = "main.tf";
+  let labDrafts = {}; // `${labId}:${fileName}` -> code string
 
   let activeExam = null;
   let activeExamIndex = 0;
@@ -86,6 +94,38 @@
   const dashboardView = document.getElementById("dashboard-view");
   const examView = document.getElementById("exam-view");
   const scorecardView = document.getElementById("scorecard-view");
+  const labStudioView = document.getElementById("lab-studio-view");
+
+  // Lab Studio Elements
+  const openLabStudioNavBtn = document.getElementById("openLabStudioNavBtn");
+  const openLabStudioCardBtn = document.getElementById("openLabStudioCardBtn");
+  const startLab01WelcomeBtn = document.getElementById("startLab01WelcomeBtn");
+  const exitLabStudioBtn = document.getElementById("exitLabStudioBtn");
+  const labSelect = document.getElementById("labSelect");
+  const labStatusBadge = document.getElementById("labStatusBadge");
+  const labTierBadge = document.getElementById("labTierBadge");
+  const labTitle = document.getElementById("labTitle");
+  const labObjectivesList = document.getElementById("labObjectivesList");
+  const labRequirementsList = document.getElementById("labRequirementsList");
+  const fileTabBar = document.getElementById("fileTabBar");
+  const codeEditorArea = document.getElementById("codeEditorArea");
+  const checkCodeBtn = document.getElementById("checkCodeBtn");
+  const revealSolutionBtn = document.getElementById("revealSolutionBtn");
+  const saveDraftBtn = document.getElementById("saveDraftBtn");
+  const resetCodeBtn = document.getElementById("resetCodeBtn");
+  const labDiagnostics = document.getElementById("labDiagnostics");
+  const diagSummaryBadge = document.getElementById("diagSummaryBadge");
+  const diagRulesList = document.getElementById("diagRulesList");
+  const labStat = document.getElementById("labStat");
+
+  // Reference Solution Modal Elements
+  const solutionModal = document.getElementById("solutionModal");
+  const closeSolutionModal = document.getElementById("closeSolutionModal");
+  const closeSolutionBottomBtn = document.getElementById("closeSolutionBottomBtn");
+  const solutionModalTitle = document.getElementById("solutionModalTitle");
+  const solutionFileTabs = document.getElementById("solutionFileTabs");
+  const solutionCodeDisplay = document.getElementById("solutionCodeDisplay");
+  const copySolutionToEditorBtn = document.getElementById("copySolutionToEditorBtn");
 
   const examSelect = document.getElementById("examSelect");
   const startSelectedExamBtn = document.getElementById("startSelectedExamBtn");
@@ -165,12 +205,33 @@
   const launchCustomExamBtn = document.getElementById("launchCustomExamBtn");
 
   // ===========================================================================
-  // Initialization
+  // Initialization & View Helpers
   // ===========================================================================
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function switchView(viewName) {
+    dashboardView.style.display = viewName === "dashboard" ? "block" : "none";
+    examView.style.display = viewName === "exam" ? "block" : "none";
+    scorecardView.style.display = viewName === "scorecard" ? "block" : "none";
+    if (labStudioView) {
+      labStudioView.style.display = viewName === "lab-studio" ? "block" : "none";
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function init() {
     loadCleanProgress();
+    loadLabDrafts();
     restoreAuthSession();
-    await loadQuestionsData();
+    await Promise.all([loadQuestionsData(), loadExercisesData()]);
     updateDashboardUI();
 
     if (currentUser && config.apiUrl) {
@@ -203,6 +264,18 @@
     allQuestions = questions;
   }
 
+  async function loadExercisesData() {
+    try {
+      const resp = await fetch("data/exercises.json");
+      if (resp.ok) {
+        allExercises = await resp.json();
+        populateLabDropdown();
+      }
+    } catch (e) {
+      console.error("Failed to load exercises.json", e);
+    }
+  }
+
   function loadCleanProgress() {
     const raw = localStorage.getItem("tf_exam_progress");
     if (raw) {
@@ -217,7 +290,8 @@
             questionStats: parsed.questionStats || {},
             domainStats: parsed.domainStats || {},
             missedQuestions: parsed.missedQuestions || [],
-            starredQuestions: parsed.starredQuestions || []
+            starredQuestions: parsed.starredQuestions || [],
+            completedLabs: parsed.completedLabs || []
           };
           return;
         }
@@ -230,7 +304,8 @@
       questionStats: {},
       domainStats: {},
       missedQuestions: [],
-      starredQuestions: []
+      starredQuestions: [],
+      completedLabs: []
     };
   }
 
@@ -254,6 +329,12 @@
         syncStat.innerText = "Cloud Synced 🟢";
         readinessDial.innerText = `${data.readiness_score || 0}%`;
         readinessStatus.innerText = data.verdict || "Ready to Begin";
+        if (data.completed_labs && Array.isArray(data.completed_labs)) {
+          const merged = new Set([...(userProgress.completedLabs || []), ...data.completed_labs]);
+          userProgress.completedLabs = Array.from(merged);
+          saveLocalProgress();
+          if (labStat) labStat.innerText = `${userProgress.completedLabs.length} / 21`;
+        }
       } else {
         syncStat.innerText = "Local Mode";
       }
@@ -299,6 +380,9 @@
     const accuracyPct = totalAttemptsCount > 0 ? ((totalCorrectCount / totalAttemptsCount) * 100).toFixed(1) : "0.0";
     coverageStat.innerText = `${questionsAttempted} / ${totalAvail}`;
     accuracyStat.innerText = `${accuracyPct}%`;
+    if (labStat) {
+      labStat.innerText = `${(userProgress.completedLabs || []).length} / 21`;
+    }
 
     // Welcome Card vs Weak Areas Banner
     if (questionsAttempted === 0) {
@@ -413,9 +497,7 @@
       flagged: false
     }));
 
-    dashboardView.style.display = "none";
-    scorecardView.style.display = "none";
-    examView.style.display = "block";
+    switchView("exam");
 
     activeExamTitle.innerText = title;
     totalQNum.innerText = questions.length;
@@ -704,8 +786,7 @@
     }
 
     // Render Scorecard
-    examView.style.display = "none";
-    scorecardView.style.display = "block";
+    switchView("scorecard");
 
     scorecardDial.innerText = `${scorePct}%`;
     if (scorePct >= 85) {
@@ -745,8 +826,7 @@
   }
 
   scorecardReturnBtn.onclick = () => {
-    scorecardView.style.display = "none";
-    dashboardView.style.display = "block";
+    switchView("dashboard");
     updateDashboardUI();
   };
 
@@ -931,6 +1011,356 @@
     customBuilderModal.style.display = "none";
     startExam(`Custom Selected Exam (${selected.length} Questions)`, selected, false);
   };
+
+  // ===========================================================================
+  // Hands-On Lab Studio Engine
+  // ===========================================================================
+  function loadLabDrafts() {
+    try {
+      const raw = localStorage.getItem("tf_lab_drafts");
+      if (raw) labDrafts = JSON.parse(raw);
+    } catch (e) {}
+  }
+
+  function saveLabDrafts() {
+    localStorage.setItem("tf_lab_drafts", JSON.stringify(labDrafts));
+  }
+
+  function populateLabDropdown() {
+    if (!labSelect || !allExercises) return;
+    labSelect.innerHTML = allExercises.map(ex => 
+      `<option value="${ex.id}">${escapeHtml(ex.title)}</option>`
+    ).join("");
+  }
+
+  function openLabStudio(exerciseId) {
+    switchView("lab-studio");
+    if (!allExercises || allExercises.length === 0) return;
+    const target = exerciseId 
+      ? (allExercises.find(e => e.id === exerciseId) || allExercises[0])
+      : (activeLab || allExercises[0]);
+    loadLab(target.id);
+  }
+
+  function loadLab(exerciseId) {
+    if (activeLab && codeEditorArea) {
+      labDrafts[`${activeLab.id}:${activeLabFile}`] = codeEditorArea.value;
+      saveLabDrafts();
+    }
+
+    const ex = allExercises.find(e => e.id === exerciseId) || allExercises[0];
+    if (!ex) return;
+    activeLab = ex;
+    if (labSelect) labSelect.value = ex.id;
+
+    if (labTitle) labTitle.innerText = ex.title;
+    if (labTierBadge) {
+      labTierBadge.innerText = ex.tier;
+      labTierBadge.className = "day-badge tier-" + ex.tier.toLowerCase();
+    }
+
+    if (labObjectivesList) {
+      labObjectivesList.innerHTML = (ex.objectives || []).map(o => `<li>${escapeHtml(o)}</li>`).join("");
+    }
+
+    if (labRequirementsList) {
+      labRequirementsList.innerHTML = (ex.validation_rules || []).map(r => `
+        <div class="lab-req-item">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <strong>${escapeHtml(r.desc)}</strong>
+            <span style="font-size: 0.75rem; color: #38bdf8; font-family: monospace;">[${escapeHtml(r.file || 'main.tf')}]</span>
+          </div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">💡 ${escapeHtml(r.hint || '')}</div>
+        </div>
+      `).join("");
+    }
+
+    updateLabStatusBadge();
+    renderFileTabs();
+
+    if (labDiagnostics) {
+      labDiagnostics.style.display = "none";
+    }
+  }
+
+  function updateLabStatusBadge() {
+    if (!activeLab || !labStatusBadge) return;
+    const isCompleted = (userProgress.completedLabs || []).includes(activeLab.id);
+    if (isCompleted) {
+      labStatusBadge.innerHTML = "🟢 Completed";
+      labStatusBadge.style.background = "rgba(16, 185, 129, 0.2)";
+      labStatusBadge.style.color = "var(--success)";
+    } else {
+      labStatusBadge.innerHTML = "🟡 In Progress";
+      labStatusBadge.style.background = "rgba(245, 158, 11, 0.2)";
+      labStatusBadge.style.color = "var(--warning)";
+    }
+  }
+
+  function renderFileTabs() {
+    if (!activeLab || !fileTabBar) return;
+    const files = Object.keys(activeLab.starter_files || {});
+    if (files.length === 0) return;
+
+    if (!files.includes(activeLabFile)) {
+      activeLabFile = files[0];
+    }
+
+    fileTabBar.innerHTML = files.map(fname => `
+      <button class="file-tab ${fname === activeLabFile ? 'active' : ''}" data-file="${escapeHtml(fname)}">
+        📄 ${escapeHtml(fname)}
+      </button>
+    `).join("");
+
+    fileTabBar.querySelectorAll(".file-tab").forEach(tab => {
+      tab.onclick = () => {
+        const nextFile = tab.getAttribute("data-file");
+        if (nextFile === activeLabFile) return;
+
+        if (codeEditorArea) {
+          labDrafts[`${activeLab.id}:${activeLabFile}`] = codeEditorArea.value;
+          saveLabDrafts();
+        }
+
+        activeLabFile = nextFile;
+        renderFileTabs();
+      };
+    });
+
+    loadCurrentFileIntoEditor();
+  }
+
+  function loadCurrentFileIntoEditor() {
+    if (!activeLab || !codeEditorArea) return;
+    const draftKey = `${activeLab.id}:${activeLabFile}`;
+    if (labDrafts[draftKey] !== undefined) {
+      codeEditorArea.value = labDrafts[draftKey];
+    } else {
+      codeEditorArea.value = (activeLab.starter_files && activeLab.starter_files[activeLabFile]) || "";
+    }
+  }
+
+  function checkLabCode() {
+    if (!activeLab) return;
+
+    if (codeEditorArea) {
+      labDrafts[`${activeLab.id}:${activeLabFile}`] = codeEditorArea.value;
+      saveLabDrafts();
+    }
+
+    const currentFiles = {};
+    for (const fname of Object.keys(activeLab.starter_files || {})) {
+      if (fname === activeLabFile && codeEditorArea) {
+        currentFiles[fname] = codeEditorArea.value;
+      } else {
+        const draft = labDrafts[`${activeLab.id}:${fname}`];
+        currentFiles[fname] = draft !== undefined ? draft : (activeLab.starter_files[fname] || "");
+      }
+    }
+
+    const rules = activeLab.validation_rules || [];
+    let passedCount = 0;
+    const results = [];
+
+    for (const rule of rules) {
+      const targetFile = rule.file || "main.tf";
+      const code = currentFiles[targetFile] || "";
+      let isMatch = false;
+
+      try {
+        const regex = new RegExp(rule.pattern, "is");
+        isMatch = regex.test(code);
+      } catch (e) {
+        console.error("Regex validation error:", e);
+      }
+
+      if (isMatch) passedCount++;
+      results.push({ rule, isMatch });
+    }
+
+    const allPassed = (passedCount === rules.length && rules.length > 0);
+
+    if (labDiagnostics) {
+      labDiagnostics.style.display = "block";
+    }
+
+    if (diagSummaryBadge) {
+      diagSummaryBadge.innerText = allPassed ? "All Passed! 100% Valid 🎉" : `${passedCount} / ${rules.length} Passed`;
+      diagSummaryBadge.style.background = allPassed ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)";
+      diagSummaryBadge.style.color = allPassed ? "var(--success)" : "var(--danger)";
+    }
+
+    if (diagRulesList) {
+      diagRulesList.innerHTML = results.map(r => `
+        <div class="diag-item ${r.isMatch ? 'diag-pass' : 'diag-fail'}">
+          <span class="diag-icon">${r.isMatch ? '✅' : '❌'}</span>
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <strong>${escapeHtml(r.rule.desc)}</strong>
+              <span class="diag-file">[${escapeHtml(r.rule.file || 'main.tf')}]</span>
+            </div>
+            ${!r.isMatch ? `<div class="diag-hint">💡 Hint: ${escapeHtml(r.rule.hint || '')}</div>` : ''}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    if (allPassed) {
+      if (!userProgress.completedLabs) userProgress.completedLabs = [];
+      if (!userProgress.completedLabs.includes(activeLab.id)) {
+        userProgress.completedLabs.push(activeLab.id);
+        saveLocalProgress();
+        updateDashboardUI();
+        updateLabStatusBadge();
+        recordLabCompletionInCloud(activeLab.id, activeLab.title);
+      }
+    }
+
+    if (labDiagnostics) {
+      labDiagnostics.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  async function recordLabCompletionInCloud(labId, title) {
+    if (!config.apiUrl || !currentUser || !currentUser.idToken) return;
+    try {
+      await fetch(`${config.apiUrl}/api/labs/complete`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${currentUser.idToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ lab_id: labId, title: title })
+      });
+    } catch (e) {
+      console.warn("Could not sync lab completion to cloud API:", e);
+    }
+  }
+
+  function openSolutionModal() {
+    if (!activeLab || !solutionModal) return;
+    if (solutionModalTitle) solutionModalTitle.innerText = `💡 Solution: ${activeLab.title}`;
+    solutionModal.style.display = "flex";
+
+    const solFiles = Object.keys(activeLab.solution_files || {});
+    if (solFiles.length === 0) {
+      if (solutionCodeDisplay) solutionCodeDisplay.innerHTML = "<em>No reference solution available for this exercise.</em>";
+      return;
+    }
+
+    activeSolutionFile = solFiles.includes(activeLabFile) ? activeLabFile : solFiles[0];
+    renderSolutionTabs();
+  }
+
+  function renderSolutionTabs() {
+    const solFiles = Object.keys(activeLab.solution_files || {});
+    if (solutionFileTabs) {
+      solutionFileTabs.innerHTML = solFiles.map(fname => `
+        <button class="file-tab ${fname === activeSolutionFile ? 'active' : ''}" data-solfile="${escapeHtml(fname)}">
+          📄 ${escapeHtml(fname)}
+        </button>
+      `).join("");
+
+      solutionFileTabs.querySelectorAll(".file-tab").forEach(tab => {
+        tab.onclick = () => {
+          activeSolutionFile = tab.getAttribute("data-solfile");
+          renderSolutionTabs();
+        };
+      });
+    }
+
+    const solCode = (activeLab.solution_files && activeLab.solution_files[activeSolutionFile]) || "";
+    if (solutionCodeDisplay) {
+      solutionCodeDisplay.innerHTML = `<pre style="margin: 0; font-family: monospace; font-size: 0.88rem; line-height: 1.5; color: #f8fafc;"><code>${escapeHtml(solCode)}</code></pre>`;
+    }
+  }
+
+  // Lab Studio Event Listeners
+  if (openLabStudioNavBtn) openLabStudioNavBtn.onclick = () => openLabStudio();
+  if (openLabStudioCardBtn) openLabStudioCardBtn.onclick = () => openLabStudio();
+  if (startLab01WelcomeBtn) startLab01WelcomeBtn.onclick = () => openLabStudio("01-first-resource");
+  if (exitLabStudioBtn) exitLabStudioBtn.onclick = () => switchView("dashboard");
+
+  if (labSelect) {
+    labSelect.onchange = () => loadLab(labSelect.value);
+  }
+
+  if (checkCodeBtn) {
+    checkCodeBtn.onclick = checkLabCode;
+  }
+
+  if (revealSolutionBtn) {
+    revealSolutionBtn.onclick = openSolutionModal;
+  }
+
+  if (closeSolutionModal) {
+    closeSolutionModal.onclick = () => solutionModal.style.display = "none";
+  }
+
+  if (closeSolutionBottomBtn) {
+    closeSolutionBottomBtn.onclick = () => solutionModal.style.display = "none";
+  }
+
+  if (copySolutionToEditorBtn) {
+    copySolutionToEditorBtn.onclick = () => {
+      if (!activeLab || !codeEditorArea) return;
+      const sol = (activeLab.solution_files && activeLab.solution_files[activeLabFile]) 
+        || (activeLab.solution_files && Object.values(activeLab.solution_files)[0]) 
+        || "";
+      codeEditorArea.value = sol;
+      labDrafts[`${activeLab.id}:${activeLabFile}`] = sol;
+      saveLabDrafts();
+      solutionModal.style.display = "none";
+      alert(`✅ Reference solution for ${activeLabFile} copied to editor! Test it with 'Check & Validate Code'.`);
+    };
+  }
+
+  if (saveDraftBtn) {
+    saveDraftBtn.onclick = () => {
+      if (!activeLab || !codeEditorArea) return;
+      labDrafts[`${activeLab.id}:${activeLabFile}`] = codeEditorArea.value;
+      saveLabDrafts();
+      const prevText = saveDraftBtn.innerText;
+      saveDraftBtn.innerText = "Draft Saved! ✅";
+      setTimeout(() => saveDraftBtn.innerText = prevText, 1500);
+    };
+  }
+
+  if (resetCodeBtn) {
+    resetCodeBtn.onclick = () => {
+      if (!activeLab || !codeEditorArea) return;
+      if (confirm(`Reset ${activeLab.title} to its clean starter template? Any unsaved edits for this exercise will be reverted.`)) {
+        for (const f of Object.keys(activeLab.starter_files || {})) {
+          delete labDrafts[`${activeLab.id}:${f}`];
+        }
+        saveLabDrafts();
+        loadCurrentFileIntoEditor();
+        if (labDiagnostics) labDiagnostics.style.display = "none";
+      }
+    };
+  }
+
+  // Roadmap Lab Buttons
+  document.querySelectorAll(".start-roadmap-lab").forEach(btn => {
+    btn.onclick = () => {
+      const labId = btn.getAttribute("data-lab");
+      if (roadmapModal) roadmapModal.style.display = "none";
+      openLabStudio(labId);
+    };
+  });
+
+  // Recommended Exercise Link in Question Feedback
+  if (feedbackLab) {
+    feedbackLab.onclick = () => {
+      const text = feedbackLab.innerText || "";
+      const match = text.match(/exercises\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        openLabStudio(match[1]);
+      }
+    };
+    feedbackLab.style.cursor = "pointer";
+    feedbackLab.title = "Click to jump to this lab in Lab Studio";
+  }
 
   // ===========================================================================
   // Cognito Authentication

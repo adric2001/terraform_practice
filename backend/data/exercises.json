@@ -1,0 +1,807 @@
+[
+  {
+    "id": "01-first-resource",
+    "number": 1,
+    "tier": "Beginner",
+    "title": "Exercise 01: Your First Terraform Resource",
+    "objectives": [
+      "Understand the `terraform` configuration block and provider declaration.",
+      "Configure the `hashicorp/local` provider.",
+      "Declare a `local_file` resource to create a managed file on disk.",
+      "Practice the core CLI workflow: `terraform init`, `terraform plan`, `terraform apply`, and `terraform destroy`."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    # TODO: Add hashicorp/local provider requirement (~> 2.5)\n  }\n}\n\n# TODO: Declare a resource \"local_file\" named \"welcome_note\"\n# - filename: \"${path.module}/welcome.txt\"\n# - content: \"Hello, Terraform! I am managing infrastructure as code.\"\n# - file_permission: \"0644\"\n",
+      "outputs.tf": "# TODO: Define output \"file_path\" referencing welcome_note.filename\n\n# TODO: Define output \"file_id\" referencing welcome_note.id\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"welcome_note\" {\n  filename        = \"${path.module}/welcome.txt\"\n  content         = \"Hello, Terraform! I am managing infrastructure as code.\"\n  file_permission = \"0644\"\n}\n",
+      "outputs.tf": "output \"file_path\" {\n  description = \"The path to the created local file\"\n  value       = local_file.welcome_note.filename\n}\n\noutput \"file_id\" {\n  description = \"The unique resource identifier assigned by Terraform\"\n  value       = local_file.welcome_note.id\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Configure 'hashicorp/local' provider in terraform block",
+        "pattern": "hashicorp/local",
+        "file": "main.tf",
+        "hint": "Add 'local = { source = \"hashicorp/local\" }' inside required_providers"
+      },
+      {
+        "id": "r2",
+        "desc": "Declare resource 'local_file' named 'welcome_note'",
+        "pattern": "resource\\s+\"local_file\"\\s+\"welcome_note\"",
+        "file": "main.tf",
+        "hint": "Define 'resource \"local_file\" \"welcome_note\" { ... }'"
+      },
+      {
+        "id": "r3",
+        "desc": "Set filename to '${path.module}/welcome.txt'",
+        "pattern": "filename\\s*=\\s*.*welcome\\.txt",
+        "file": "main.tf",
+        "hint": "Specify filename = \"${path.module}/welcome.txt\""
+      },
+      {
+        "id": "r4",
+        "desc": "Set file content containing greeting text",
+        "pattern": "content\\s*=",
+        "file": "main.tf",
+        "hint": "Add content attribute with greeting message"
+      },
+      {
+        "id": "r5",
+        "desc": "Declare output 'file_path' referencing welcome_note filename",
+        "pattern": "output\\s+\"file_path\"\\s*{[^}]*local_file\\.welcome_note\\.filename",
+        "file": "outputs.tf",
+        "hint": "output \"file_path\" { value = local_file.welcome_note.filename }"
+      },
+      {
+        "id": "r6",
+        "desc": "Declare output 'file_id' referencing welcome_note id",
+        "pattern": "output\\s+\"file_id\"\\s*{[^}]*local_file\\.welcome_note\\.id",
+        "file": "outputs.tf",
+        "hint": "output \"file_id\" { value = local_file.welcome_note.id }"
+      }
+    ]
+  },
+  {
+    "id": "02-variables-and-outputs",
+    "number": 2,
+    "tier": "Beginner",
+    "title": "Exercise 02: Variables and Outputs",
+    "objectives": [
+      "Define typed input variables (`string`, `number`, `bool`).",
+      "Provide default values and variable descriptions.",
+      "Use `terraform.tfvars` to supply custom variable values.",
+      "Declare outputs with `description` and `sensitive = true` flags."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO: Create a local_file resource writing environment settings to \"${path.module}/app_config.env\"\n# Content template:\n# ENVIRONMENT=<environment>\n# PORT=<app_port>\n# FEATURE_ENABLED=<enable_feature>\n",
+      "outputs.tf": "# TODO: Output \"app_url\" formatted as \"http://localhost:<app_port>\"\n\n# TODO: Output \"database_password\" marked as sensitive = true\n",
+      "terraform.tfvars.example": "environment    = \"staging\"\napp_port       = 9000\nenable_feature = true\ndb_password    = \"super_secret_p@ssw0rd!\"\n",
+      "variables.tf": "# TODO: Define variable \"environment\" (type string, default \"development\")\n\n# TODO: Define variable \"app_port\" (type number, default 8080)\n\n# TODO: Define variable \"enable_feature\" (type bool, default true)\n\n# TODO: Define variable \"db_password\" (type string, sensitive = true, no default)\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"app_config\" {\n  filename = \"${path.module}/app_config.env\"\n  content  = <<-EOT\n    ENVIRONMENT=${var.environment}\n    PORT=${var.app_port}\n    FEATURE_ENABLED=${var.enable_feature}\n  EOT\n}\n",
+      "outputs.tf": "output \"app_url\" {\n  description = \"Fully qualified local application URL\"\n  value       = \"http://localhost:${var.app_port}\"\n}\n\noutput \"database_password\" {\n  description = \"Master database password\"\n  value       = var.db_password\n  sensitive   = true\n}\n",
+      "terraform.tfvars": "environment    = \"staging\"\napp_port       = 9000\nenable_feature = true\ndb_password    = \"super_secret_p@ssw0rd!\"\n",
+      "variables.tf": "variable \"environment\" {\n  description = \"Target deployment environment (e.g. dev, staging, prod)\"\n  type        = string\n  default     = \"development\"\n}\n\nvariable \"app_port\" {\n  description = \"The port on which the application server listens\"\n  type        = number\n  default     = 8080\n}\n\nvariable \"enable_feature\" {\n  description = \"Flag to toggle experimental feature flags\"\n  type        = bool\n  default     = true\n}\n\nvariable \"db_password\" {\n  description = \"Database master password\"\n  type        = string\n  sensitive   = true\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare string variable 'environment'",
+        "pattern": "variable\\s+\"environment\"\\s*{[^}]*type\\s*=\\s*string",
+        "file": "variables.tf",
+        "hint": "variable \"environment\" { type = string }"
+      },
+      {
+        "id": "r2",
+        "desc": "Declare number variable 'app_port'",
+        "pattern": "variable\\s+\"app_port\"\\s*{[^}]*type\\s*=\\s*number",
+        "file": "variables.tf",
+        "hint": "variable \"app_port\" { type = number }"
+      },
+      {
+        "id": "r3",
+        "desc": "Declare bool variable 'enable_feature'",
+        "pattern": "variable\\s+\"enable_feature\"\\s*{[^}]*type\\s*=\\s*bool",
+        "file": "variables.tf",
+        "hint": "variable \"enable_feature\" { type = bool }"
+      },
+      {
+        "id": "r4",
+        "desc": "Declare sensitive variable 'db_password'",
+        "pattern": "variable\\s+\"db_password\"\\s*{[^}]*sensitive\\s*=\\s*true",
+        "file": "variables.tf",
+        "hint": "Mark sensitive = true on variable db_password"
+      },
+      {
+        "id": "r5",
+        "desc": "Declare outputs 'app_url' and 'database_password'",
+        "pattern": "output\\s+\"app_url\"",
+        "file": "outputs.tf",
+        "hint": "output \"app_url\" { value = ... }"
+      }
+    ]
+  },
+  {
+    "id": "03-collections-and-types",
+    "number": 3,
+    "tier": "Beginner",
+    "title": "Exercise 03: Collections and Structural Types",
+    "objectives": [
+      "Master complex Terraform types: `list`, `map`, `set`, and `object({ ... })`.",
+      "Access values via index (`var.list[0]`) and key (`var.map[\"key\"]`).",
+      "Render structural objects into formatted configuration files."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO: Write service definition and metadata as JSON into \"${path.module}/service.json\"\n",
+      "outputs.tf": "# TODO: Output \"primary_ip\" (first item of allowed_ips)\n\n# TODO: Output \"service_name\" (service_definition.name)\n",
+      "variables.tf": "# TODO: Define variable \"allowed_ips\" as list(string) with a default of 3 IP CIDRs\n\n# TODO: Define variable \"server_metadata\" as map(string) with default tags\n\n# TODO: Define variable \"service_definition\" as object({\n#   name    = string\n#   port    = number\n#   enabled = bool\n#   tags    = list(string)\n# }) with default values\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"service_json\" {\n  filename = \"${path.module}/service.json\"\n  content = jsonencode({\n    service  = var.service_definition\n    allowed  = var.allowed_ips\n    metadata = var.server_metadata\n  })\n}\n",
+      "outputs.tf": "output \"primary_ip\" {\n  description = \"First allowed CIDR block in the list\"\n  value       = var.allowed_ips[0]\n}\n\noutput \"service_name\" {\n  description = \"Configured name of the service\"\n  value       = var.service_definition.name\n}\n",
+      "variables.tf": "variable \"allowed_ips\" {\n  description = \"List of allowed client IP CIDR blocks\"\n  type        = list(string)\n  default     = [\"10.0.1.0/24\", \"10.0.2.0/24\", \"192.168.1.100/32\"]\n}\n\nvariable \"server_metadata\" {\n  description = \"Common metadata tags applied to the infrastructure\"\n  type        = map(string)\n  default = {\n    team        = \"devops\"\n    cost_center = \"cc-1042\"\n    project     = \"api-gateway\"\n  }\n}\n\nvariable \"service_definition\" {\n  description = \"Complete service configuration object\"\n  type = object({\n    name    = string\n    port    = number\n    enabled = bool\n    tags    = list(string)\n  })\n  default = {\n    name    = \"auth-service\"\n    port    = 8443\n    enabled = true\n    tags    = [\"security\", \"auth\", \"v2\"]\n  }\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Define list(string) variable 'allowed_ips'",
+        "pattern": "list\\(string\\)",
+        "file": "variables.tf",
+        "hint": "Declare variable allowed_ips with type = list(string)"
+      },
+      {
+        "id": "r2",
+        "desc": "Define map(string) variable 'server_metadata'",
+        "pattern": "map\\(string\\)",
+        "file": "variables.tf",
+        "hint": "Declare variable server_metadata with type = map(string)"
+      },
+      {
+        "id": "r3",
+        "desc": "Reference list element in output 'primary_ip'",
+        "pattern": "output\\s+\"primary_ip\"",
+        "file": "outputs.tf",
+        "hint": "Index list using var.allowed_ips[0]"
+      }
+    ]
+  },
+  {
+    "id": "04-resource-dependencies",
+    "number": 4,
+    "tier": "Beginner",
+    "title": "Exercise 04: Resource Dependencies and the Graph",
+    "objectives": [
+      "Understand how Terraform builds the Directed Acyclic Graph (DAG).",
+      "Differentiate between **implicit dependencies** and **explicit dependencies** (`depends_on`).",
+      "Avoid race conditions during multi-resource provisioning.",
+      "Use `terraform graph` to inspect dependencies."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n    random = {\n      source  = \"hashicorp/random\"\n      version = \"~> 3.6.0\"\n    }\n    archive = {\n      source  = \"hashicorp/archive\"\n      version = \"~> 2.4.0\"\n    }\n  }\n}\n\n# TODO 1: Generate a random password (length = 16, special = true) using resource \"random_password\" \"db_pass\"\n\n# TODO 2: Save random password to \"${path.module}/db_secret.txt\" using resource \"local_file\" \"secret_file\"\n\n# TODO 3: Archive \"${path.module}/db_secret.txt\" into \"${path.module}/db_bundle.zip\" using data \"archive_file\" \"bundle\"\n# Include explicit depends_on = [local_file.secret_file]\n",
+      "outputs.tf": "# TODO: Output \"bundle_sha256\" referencing data.archive_file.bundle.output_base64sha256\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n    random = {\n      source  = \"hashicorp/random\"\n      version = \"~> 3.6.0\"\n    }\n    archive = {\n      source  = \"hashicorp/archive\"\n      version = \"~> 2.4.0\"\n    }\n  }\n}\n\nresource \"random_password\" \"db_pass\" {\n  length           = 16\n  special          = true\n  override_special = \"!#$%&*()-_=+[]{}<>:?\"\n}\n\nresource \"local_file\" \"secret_file\" {\n  filename        = \"${path.module}/db_secret.txt\"\n  content         = random_password.db_pass.result\n  file_permission = \"0600\"\n}\n\ndata \"archive_file\" \"bundle\" {\n  type        = \"zip\"\n  source_file = local_file.secret_file.filename\n  output_path = \"${path.module}/db_bundle.zip\"\n\n  depends_on = [\n    local_file.secret_file\n  ]\n}\n",
+      "outputs.tf": "output \"bundle_sha256\" {\n  description = \"Base64 SHA256 checksum of the generated archive\"\n  value       = data.archive_file.bundle.output_base64sha256\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare explicit depends_on meta-argument",
+        "pattern": "depends_on\\s*=\\s*\\[",
+        "file": "main.tf",
+        "hint": "Add depends_on = [local_file.setup_script] to create an explicit DAG edge"
+      }
+    ]
+  },
+  {
+    "id": "05-data-sources",
+    "number": 5,
+    "tier": "Beginner",
+    "title": "Exercise 05: Data Sources and External Data",
+    "objectives": [
+      "Query external state and existing files using `data` blocks.",
+      "Contrast `data` (read-only) with `resource` (manage lifecycle).",
+      "Parse JSON payloads with `jsondecode()` to drive resource parameters."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO 1: Read the external JSON file using data \"local_file\" \"spec\"\n# Target path: \"${path.module}/data/system_spec.json\"\n\n# TODO 2: Parse json content using a local variable:\n# locals {\n#   system_spec = jsondecode(data.local_file.spec.content)\n# }\n\n# TODO 3: Create a local_file resource \"${path.module}/rendered_manifest.txt\"\n",
+      "outputs.tf": "# TODO: Output \"app_name\" from parsed data\n\n# TODO: Output \"memory_gb\" from parsed data\n",
+      "data/system_spec.json": "{\n  \"system_name\": \"payment-processor\",\n  \"version\": \"3.4.1\",\n  \"resources\": {\n    \"cpu_cores\": 4,\n    \"memory_gb\": 16\n  },\n  \"features\": [\"fraud-detection\", \"instant-settlement\"]\n}\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\ndata \"local_file\" \"spec\" {\n  filename = \"${path.module}/data/system_spec.json\"\n}\n\nlocals {\n  system_spec = jsondecode(data.local_file.spec.content)\n}\n\nresource \"local_file\" \"manifest\" {\n  filename = \"${path.module}/rendered_manifest.txt\"\n  content  = <<-EOT\n    SYSTEM SPECIFICATION\n    Name: ${local.system_spec.system_name}\n    Version: ${local.system_spec.version}\n    CPUs: ${local.system_spec.resources.cpu_cores} cores\n    Memory: ${local.system_spec.resources.memory_gb} GB\n    Features: ${join(\", \", local.system_spec.features)}\n  EOT\n}\n",
+      "outputs.tf": "output \"app_name\" {\n  description = \"Application name parsed from external data\"\n  value       = local.system_spec.system_name\n}\n\noutput \"memory_gb\" {\n  description = \"Allocated memory in GB\"\n  value       = local.system_spec.resources.memory_gb\n}\n",
+      "data/system_spec.json": "{\n  \"system_name\": \"payment-processor\",\n  \"version\": \"3.4.1\",\n  \"resources\": {\n    \"cpu_cores\": 4,\n    \"memory_gb\": 16\n  },\n  \"features\": [\"fraud-detection\", \"instant-settlement\"]\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare data source 'local_file' 'spec'",
+        "pattern": "data\\s+\"local_file\"\\s+\"spec\"",
+        "file": "main.tf",
+        "hint": "Define data \"local_file\" \"spec\" to read outside file"
+      },
+      {
+        "id": "r2",
+        "desc": "Parse JSON content with jsondecode()",
+        "pattern": "jsondecode\\(",
+        "file": "main.tf",
+        "hint": "locals { system_spec = jsondecode(...) }"
+      },
+      {
+        "id": "r3",
+        "desc": "Output 'app_name' parsed from external spec",
+        "pattern": "output\\s+\"app_name\"",
+        "file": "outputs.tf",
+        "hint": "Expose local.system_spec.system_name"
+      }
+    ]
+  },
+  {
+    "id": "06-count-and-foreach",
+    "number": 6,
+    "tier": "Beginner",
+    "title": "Exercise 06: `count` vs `for_each`",
+    "objectives": [
+      "Understand the distinct behavior of `count` and `for_each`.",
+      "Learn why modifying a `count` list causes destructive index shifts.",
+      "Master `for_each` with sets (`toset()`) and maps.",
+      "Access instance keys with `each.key` and `each.value`."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO 1: Create local_file \"servers\" using for_each = toset(var.server_names)\n# Filename: \"${path.module}/servers/${each.key}.txt\"\n\n# TODO 2: Create local_file \"roles\" using for_each = var.service_roles\n# Filename: \"${path.module}/roles/${each.key}.conf\"\n",
+      "outputs.tf": "# TODO: Output a map of server files: { for k, v in local_file.servers : k => v.filename }\n",
+      "variables.tf": "variable \"server_names\" {\n  type    = list(string)\n  default = [\"auth\", \"payments\", \"worker\"]\n}\n\nvariable \"service_roles\" {\n  type = map(number)\n  default = {\n    frontend = 80\n    backend  = 8080\n    db       = 5432\n  }\n}\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"servers\" {\n  for_each = toset(var.server_names)\n\n  filename = \"${path.module}/servers/${each.key}.txt\"\n  content  = \"Server Hostname: ${each.key}.internal\\n\"\n}\n\nresource \"local_file\" \"roles\" {\n  for_each = var.service_roles\n\n  filename = \"${path.module}/roles/${each.key}.conf\"\n  content  = \"Role: ${each.key} | Listening Port: ${each.value}\\n\"\n}\n",
+      "outputs.tf": "output \"server_file_paths\" {\n  description = \"Map of server names to generated file paths\"\n  value       = { for k, v in local_file.servers : k => v.filename }\n}\n\noutput \"role_ports\" {\n  description = \"Port mappings for each created role\"\n  value       = { for k, v in local_file.roles : k => var.service_roles[k] }\n}\n",
+      "variables.tf": "variable \"server_names\" {\n  description = \"List of server hostnames to instantiate\"\n  type        = list(string)\n  default     = [\"auth\", \"payments\", \"worker\"]\n}\n\nvariable \"service_roles\" {\n  description = \"Map of service role names to port numbers\"\n  type        = map(number)\n  default = {\n    frontend = 80\n    backend  = 8080\n    db       = 5432\n  }\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Use for_each with toset() on server_names",
+        "pattern": "for_each\\s*=\\s*toset\\(var\\.server_names\\)",
+        "file": "main.tf",
+        "hint": "for_each = toset(var.server_names)"
+      },
+      {
+        "id": "r2",
+        "desc": "Address each resource with each.key",
+        "pattern": "each\\.key",
+        "file": "main.tf",
+        "hint": "Reference current element using each.key"
+      }
+    ]
+  },
+  {
+    "id": "07-lifecycle-rules",
+    "number": 7,
+    "tier": "Beginner",
+    "title": "Exercise 07: Lifecycle Rules",
+    "objectives": [
+      "Control resource replacement behavior using the `lifecycle` meta-argument.",
+      "Use `create_before_destroy` to achieve zero-downtime resource replacement.",
+      "Use `prevent_destroy` to protect mission-critical resources from accidental deletion.",
+      "Use `ignore_changes` to prevent Terraform from overwriting out-of-band updates."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO 1: Resource \"critical_db_seed\" with lifecycle { prevent_destroy = false }\n\n# TODO 2: Resource \"blue_green_app\" with lifecycle { create_before_destroy = true }\n\n# TODO 3: Resource \"externally_managed_file\" with lifecycle { ignore_changes = [content] }\n",
+      "outputs.tf": "# TODO: Expose filenames of managed resources\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"critical_db_seed\" {\n  filename = \"${path.module}/db_seed.sql\"\n  content  = \"INSERT INTO schema_version VALUES (1, 'initial');\"\n\n  lifecycle {\n    prevent_destroy = false\n  }\n}\n\nresource \"local_file\" \"blue_green_app\" {\n  filename = \"${path.module}/app_release.txt\"\n  content  = \"Release Version 1.0.0\"\n\n  lifecycle {\n    create_before_destroy = true\n  }\n}\n\nresource \"local_file\" \"externally_managed_file\" {\n  filename = \"${path.module}/dynamic_tags.conf\"\n  content  = \"initial_tag=alpha\"\n\n  lifecycle {\n    ignore_changes = [\n      content,\n      file_permission\n    ]\n  }\n}\n",
+      "outputs.tf": "output \"critical_file\" {\n  description = \"Protected database seed file\"\n  value       = local_file.critical_db_seed.filename\n}\n\noutput \"blue_green_file\" {\n  description = \"File using create_before_destroy lifecycle\"\n  value       = local_file.blue_green_app.filename\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare lifecycle block",
+        "pattern": "lifecycle\\s*{",
+        "file": "main.tf",
+        "hint": "Add lifecycle { ... } inside resource"
+      },
+      {
+        "id": "r2",
+        "desc": "Set prevent_destroy or create_before_destroy",
+        "pattern": "prevent_destroy\\s*=\\s*true|create_before_destroy\\s*=\\s*true|ignore_changes\\s*=",
+        "file": "main.tf",
+        "hint": "Configure prevent_destroy = true"
+      }
+    ]
+  },
+  {
+    "id": "08-builtin-functions",
+    "number": 8,
+    "tier": "Intermediate",
+    "title": "Exercise 08: Built-in Functions & HCL Expressions",
+    "objectives": [
+      "Transform complex data structures using built-in HCL functions (`flatten`, `merge`, `lookup`, `compact`).",
+      "Use ternary expressions: `condition ? true_val : false_val`.",
+      "Build list and map projections with `for` expressions (`[for item in list : ...]` and `{for k, v in map : ...}`)."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO 1: Use a local block with flatten() and nested for loops:\n# locals {\n#   enabled_endpoints = flatten([\n#     for env_name, env_data in var.cluster_config : [\n#       for svc in env_data.services : \"${svc}.${env_name}.internal\"\n#     ] if env_data.enabled\n#   ])\n# }\n\n# TODO 2: Create local_file \"dns_records\" writing sorted endpoints to \"${path.module}/dns_records.txt\"\n",
+      "outputs.tf": "# TODO: Output \"endpoints\" and \"total_endpoints\"\n",
+      "variables.tf": "variable \"cluster_config\" {\n  type = map(object({\n    services = list(string)\n    enabled  = bool\n  }))\n  default = {\n    dev = {\n      services = [\"api\", \"auth\"]\n      enabled  = true\n    }\n    staging = {\n      services = [\"api\", \"auth\", \"billing\"]\n      enabled  = true\n    }\n    prod = {\n      services = [\"api\", \"auth\", \"billing\", \"analytics\"]\n      enabled  = false\n    }\n  }\n}\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nlocals {\n  # Flatten nested services for enabled environments only\n  enabled_endpoints = sort(flatten([\n    for env_name, env_data in var.cluster_config : [\n      for svc in env_data.services : \"${svc}.${env_name}.internal\"\n    ] if env_data.enabled\n  ]))\n}\n\nresource \"local_file\" \"dns_records\" {\n  filename = \"${path.module}/dns_records.txt\"\n  content  = join(\"\\n\", local.enabled_endpoints)\n}\n",
+      "outputs.tf": "output \"endpoints\" {\n  description = \"Flattened list of enabled internal service endpoints\"\n  value       = local.enabled_endpoints\n}\n\noutput \"total_endpoints\" {\n  description = \"Count of enabled endpoints\"\n  value       = length(local.enabled_endpoints)\n}\n",
+      "variables.tf": "variable \"cluster_config\" {\n  description = \"Nested cluster and environment configuration map\"\n  type = map(object({\n    services = list(string)\n    enabled  = bool\n  }))\n  default = {\n    dev = {\n      services = [\"api\", \"auth\"]\n      enabled  = true\n    }\n    staging = {\n      services = [\"api\", \"auth\", \"billing\"]\n      enabled  = true\n    }\n    prod = {\n      services = [\"api\", \"auth\", \"billing\", \"analytics\"]\n      enabled  = false\n    }\n  }\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Use flatten() and sort() to transform nested endpoints",
+        "pattern": "flatten\\(",
+        "file": "main.tf",
+        "hint": "Combine nested lists using flatten()"
+      },
+      {
+        "id": "r2",
+        "desc": "Output count of endpoints using length()",
+        "pattern": "length\\(",
+        "file": "outputs.tf",
+        "hint": "value = length(local.enabled_endpoints)"
+      }
+    ]
+  },
+  {
+    "id": "09-dynamic-blocks",
+    "number": 9,
+    "tier": "Intermediate",
+    "title": "Exercise 09: Dynamic Blocks",
+    "objectives": [
+      "Understand the syntax and purpose of `dynamic` blocks.",
+      "Generate repeating nested blocks conditionally and cleanly.",
+      "Use `iterator` and access values using `iterator.value`."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO: Format firewall rules dynamically into \"${path.module}/firewall.conf\"\n",
+      "outputs.tf": "# TODO: Output \"active_rules\" as list of rule names\n",
+      "variables.tf": "variable \"firewall_rules\" {\n  type = map(object({\n    port        = number\n    protocol    = string\n    cidr_blocks = list(string)\n    action      = string\n  }))\n  default = {\n    allow_http = {\n      port        = 80\n      protocol    = \"tcp\"\n      cidr_blocks = [\"0.0.0.0/0\"]\n      action      = \"allow\"\n    }\n    allow_https = {\n      port        = 443\n      protocol    = \"tcp\"\n      cidr_blocks = [\"0.0.0.0/0\"]\n      action      = \"allow\"\n    }\n    allow_ssh = {\n      port        = 22\n      protocol    = \"tcp\"\n      cidr_blocks = [\"10.0.0.0/8\"]\n      action      = \"allow\"\n    }\n  }\n}\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"firewall_config\" {\n  filename = \"${path.module}/firewall.conf\"\n  content  = <<-EOT\n    # Generated Firewall Configuration\n    %{for rule_name, rule in var.firewall_rules~}\n    rule \"${rule_name}\" {\n      port     = ${rule.port}\n      protocol = \"${rule.protocol}\"\n      action   = \"${rule.action}\"\n      cidrs    = [${join(\", \", [for c in rule.cidr_blocks : format(\"%q\", c)])}]\n    }\n    %{endfor~}\n  EOT\n}\n",
+      "outputs.tf": "output \"active_rules\" {\n  description = \"Names of active firewall rules\"\n  value       = keys(var.firewall_rules)\n}\n",
+      "variables.tf": "variable \"firewall_rules\" {\n  description = \"Map of security firewall rules\"\n  type = map(object({\n    port        = number\n    protocol    = string\n    cidr_blocks = list(string)\n    action      = string\n  }))\n  default = {\n    allow_http = {\n      port        = 80\n      protocol    = \"tcp\"\n      cidr_blocks = [\"0.0.0.0/0\"]\n      action      = \"allow\"\n    }\n    allow_https = {\n      port        = 443\n      protocol    = \"tcp\"\n      cidr_blocks = [\"0.0.0.0/0\"]\n      action      = \"allow\"\n    }\n    allow_ssh = {\n      port        = 22\n      protocol    = \"tcp\"\n      cidr_blocks = [\"10.0.0.0/8\"]\n      action      = \"allow\"\n    }\n  }\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Generate repetitive firewall rules dynamically using directives or blocks",
+        "pattern": "firewall_rules",
+        "file": "main.tf",
+        "hint": "Iterate over var.firewall_rules"
+      },
+      {
+        "id": "r2",
+        "desc": "Extract active rule keys in outputs",
+        "pattern": "keys\\(var\\.firewall_rules\\)|for_each",
+        "file": "outputs.tf",
+        "hint": "output \"active_rules\" { value = keys(var.firewall_rules) }"
+      }
+    ]
+  },
+  {
+    "id": "10-child-modules",
+    "number": 10,
+    "tier": "Intermediate",
+    "title": "Exercise 10: Reusable Child Modules",
+    "objectives": [
+      "Encapsulate reusable infrastructure into a child module.",
+      "Define module input variables and module output values.",
+      "Instantiate child modules multiple times with different parameters from the root module."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO 1: Call module \"app_assets\" using source = \"./modules/storage_bucket\"\n\n# TODO 2: Call module \"app_logs\" using source = \"./modules/storage_bucket\"\n",
+      "outputs.tf": "# TODO: Expose output attributes from module.app_assets and module.app_logs\n",
+      "modules/storage_bucket/main.tf": "# TODO: Create a local_file writing bucket metadata to \"${path.module}/../../storage/${var.bucket_name}.json\"\n",
+      "modules/storage_bucket/outputs.tf": "# TODO: Output manifest_path and arn (e.g. \"arn:aws:s3:::${var.bucket_name}\")\n",
+      "modules/storage_bucket/variables.tf": "# TODO: Define bucket_name (string), environment (string), and retention_days (number, default 30)\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nmodule \"app_assets\" {\n  source = \"./modules/storage_bucket\"\n\n  bucket_name    = \"app-assets\"\n  environment    = \"production\"\n  retention_days = 365\n}\n\nmodule \"app_logs\" {\n  source = \"./modules/storage_bucket\"\n\n  bucket_name    = \"app-logs\"\n  environment    = \"production\"\n  retention_days = 90\n}\n",
+      "outputs.tf": "output \"assets_manifest\" {\n  description = \"Path to assets bucket manifest\"\n  value       = module.app_assets.manifest_path\n}\n\noutput \"logs_manifest\" {\n  description = \"Path to logs bucket manifest\"\n  value       = module.app_logs.manifest_path\n}\n",
+      "modules/storage_bucket/main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"bucket_manifest\" {\n  filename = \"${path.module}/../../storage/${var.bucket_name}.json\"\n  content = jsonencode({\n    bucket_name    = var.bucket_name\n    environment    = var.environment\n    retention_days = var.retention_days\n  })\n}\n",
+      "modules/storage_bucket/outputs.tf": "output \"manifest_path\" {\n  description = \"Filesystem path to bucket manifest\"\n  value       = local_file.bucket_manifest.filename\n}\n\noutput \"arn\" {\n  description = \"Simulated resource ARN\"\n  value       = \"arn:aws:s3:::${var.bucket_name}\"\n}\n",
+      "modules/storage_bucket/variables.tf": "variable \"bucket_name\" {\n  description = \"Unique identifier for the storage bucket\"\n  type        = string\n}\n\nvariable \"environment\" {\n  description = \"Target deployment environment\"\n  type        = string\n  default     = \"dev\"\n}\n\nvariable \"retention_days\" {\n  description = \"Data retention policy in days\"\n  type        = number\n  default     = 30\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare module block with source attribute",
+        "pattern": "module\\s+\"[a-zA-Z0-9_]+\"\\s*{[^}]*source\\s*=",
+        "file": "main.tf",
+        "hint": "module \"storage\" { source = \"./modules/storage_bucket\" }"
+      }
+    ]
+  },
+  {
+    "id": "11-workspaces",
+    "number": 11,
+    "tier": "Intermediate",
+    "title": "Exercise 11: Workspaces & Multi-Environment Configuration",
+    "objectives": [
+      "Master Terraform workspaces (`default`, `dev`, `staging`, `prod`).",
+      "Reference the active workspace via `terraform.workspace`.",
+      "Drive environment-specific sizing, naming, and counts dynamically."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO 1: Extract current config using lookup(var.workspace_settings, terraform.workspace, var.workspace_settings[\"default\"])\n\n# TODO 2: Write configuration to \"${path.module}/env_${terraform.workspace}.conf\"\n",
+      "outputs.tf": "# TODO: Output active workspace name and chosen instance_type\n",
+      "variables.tf": "variable \"workspace_settings\" {\n  type = map(object({\n    instance_type = string\n    replicas      = number\n    debug_mode    = bool\n  }))\n  default = {\n    default = {\n      instance_type = \"t3.micro\"\n      replicas      = 1\n      debug_mode    = true\n    }\n    dev = {\n      instance_type = \"t3.small\"\n      replicas      = 2\n      debug_mode    = true\n    }\n    prod = {\n      instance_type = \"m5.large\"\n      replicas      = 5\n      debug_mode    = false\n    }\n  }\n}\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nlocals {\n  current_env = terraform.workspace\n  config      = lookup(var.workspace_settings, local.current_env, var.workspace_settings[\"default\"])\n}\n\nresource \"local_file\" \"environment_config\" {\n  filename = \"${path.module}/env_${local.current_env}.conf\"\n  content  = <<-EOT\n    # Configuration for Workspace: ${local.current_env}\n    INSTANCE_TYPE=${local.config.instance_type}\n    REPLICAS=${local.config.replicas}\n    DEBUG_MODE=${local.config.debug_mode}\n  EOT\n}\n",
+      "outputs.tf": "output \"active_workspace\" {\n  description = \"Currently active Terraform workspace\"\n  value       = terraform.workspace\n}\n\noutput \"deployed_instance_type\" {\n  description = \"Instance type chosen for this workspace\"\n  value       = local.config.instance_type\n}\n",
+      "variables.tf": "variable \"workspace_settings\" {\n  description = \"Environment parameters keyed by Terraform workspace name\"\n  type = map(object({\n    instance_type = string\n    replicas      = number\n    debug_mode    = bool\n  }))\n  default = {\n    default = {\n      instance_type = \"t3.micro\"\n      replicas      = 1\n      debug_mode    = true\n    }\n    dev = {\n      instance_type = \"t3.small\"\n      replicas      = 2\n      debug_mode    = true\n    }\n    prod = {\n      instance_type = \"m5.large\"\n      replicas      = 5\n      debug_mode    = false\n    }\n  }\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Reference terraform.workspace in expression",
+        "pattern": "terraform\\.workspace",
+        "file": "main.tf",
+        "hint": "Dynamically branch configs using terraform.workspace"
+      }
+    ]
+  },
+  {
+    "id": "12-state-manipulation",
+    "number": 12,
+    "tier": "Intermediate",
+    "title": "Exercise 12: State Inspection & Manipulation",
+    "objectives": [
+      "Practice essential state commands: `terraform state list`, `show`, `mv`, and `rm`.",
+      "Safely rename a resource address in state without triggering destructive recreation.",
+      "Understand how to remove a resource from management without destroying the underlying asset."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"legacy_config\" {\n  filename = \"${path.module}/system.cfg\"\n  content  = \"cluster_nodes=3\\n\"\n}\n",
+      "outputs.tf": "output \"file_id\" {\n  value = local_file.legacy_config.id\n}\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"modern_config\" {\n  filename = \"${path.module}/system.cfg\"\n  content  = \"cluster_nodes=3\\n\"\n}\n",
+      "outputs.tf": "output \"file_id\" {\n  description = \"Identifier of the renamed resource in state\"\n  value       = local_file.modern_config.id\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Define managed resources with state tracking addresses",
+        "pattern": "resource\\s+\"[a-zA-Z0-9_]+\"",
+        "file": "main.tf",
+        "hint": "Declare resource to inspect with terraform state list/show"
+      }
+    ]
+  },
+  {
+    "id": "13-validations-and-conditions",
+    "number": 13,
+    "tier": "Intermediate",
+    "title": "Exercise 13: Custom Validations & Pre/Post-Conditions",
+    "objectives": [
+      "Enforce strict input validation using variable `validation` blocks with regex.",
+      "Implement resource `lifecycle { precondition { ... } }` checks.",
+      "Implement resource `lifecycle { postcondition { ... } }` checks."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO: Add local_file \"release_note\" with lifecycle preconditions and postconditions\n",
+      "outputs.tf": "# TODO: Output release details\n",
+      "variables.tf": "variable \"env_code\" {\n  type    = string\n  default = \"dev\"\n}\n\nvariable \"app_version\" {\n  type    = string\n  default = \"v1.2.0\"\n}\n\nvariable \"cluster_name\" {\n  type    = string\n  default = \"alpha\"\n}\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"release_note\" {\n  filename = \"${path.module}/release_${var.env_code}.json\"\n  content = jsonencode({\n    environment  = var.env_code\n    version      = var.app_version\n    cluster_name = var.cluster_name\n  })\n\n  lifecycle {\n    precondition {\n      condition     = length(var.cluster_name) >= 3\n      error_message = \"cluster_name must be at least 3 characters long.\"\n    }\n\n    postcondition {\n      condition     = length(self.content) > 10\n      error_message = \"Rendered release content must not be empty or truncated.\"\n    }\n  }\n}\n",
+      "outputs.tf": "output \"release_path\" {\n  description = \"Path of the verified release configuration file\"\n  value       = local_file.release_note.filename\n}\n",
+      "variables.tf": "variable \"env_code\" {\n  description = \"Environment identifier (dev, stage, prod)\"\n  type        = string\n  default     = \"dev\"\n\n  validation {\n    condition     = contains([\"dev\", \"stage\", \"prod\"], var.env_code)\n    error_message = \"The env_code variable must be exactly 'dev', 'stage', or 'prod'.\"\n  }\n}\n\nvariable \"app_version\" {\n  description = \"Application release version matching semver (e.g. v1.2.3)\"\n  type        = string\n  default     = \"v1.2.0\"\n\n  validation {\n    condition     = can(regex(\"^v[0-9]+\\\\.[0-9]+\\\\.[0-9]+$\", var.app_version))\n    error_message = \"app_version must follow semantic versioning prefixed with 'v' (e.g., 'v1.0.0').\"\n  }\n}\n\nvariable \"cluster_name\" {\n  description = \"Name of the target compute cluster\"\n  type        = string\n  default     = \"alpha\"\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare custom validation block on variable",
+        "pattern": "validation\\s*{[^}]*condition\\s*=[^}]*error_message\\s*=",
+        "file": "variables.tf",
+        "hint": "validation { condition = ... error_message = \"...\" }"
+      }
+    ]
+  },
+  {
+    "id": "14-terraform-data-and-provisioners",
+    "number": 14,
+    "tier": "Intermediate",
+    "title": "Exercise 14: `terraform_data` & Lifecycle Triggers",
+    "objectives": [
+      "Replace deprecated `null_resource` with modern `terraform_data` (built-in since Terraform 1.4).",
+      "Use `triggers_replace` to force re-execution when an input hash changes.",
+      "Practice `local-exec` provisioners and learn safe patterns for external script orchestration."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"payload\" {\n  filename = \"${path.module}/app_payload.txt\"\n  content  = \"Build Artifact: ${var.build_id}\\n\"\n}\n\n# TODO: Add terraform_data \"validator\"\n",
+      "outputs.tf": "# TODO: Output payload SHA256\n",
+      "variables.tf": "variable \"build_id\" {\n  type    = string\n  default = \"build-101\"\n}\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"payload\" {\n  filename = \"${path.module}/app_payload.txt\"\n  content  = \"Build Artifact: ${var.build_id}\\n\"\n}\n\nresource \"terraform_data\" \"validator\" {\n  input = filesha256(local_file.payload.filename)\n\n  triggers_replace = [\n    local_file.payload.content\n  ]\n\n  provisioner \"local-exec\" {\n    command = \"echo '[AUDIT] Verified payload ${self.input} for build ${var.build_id}'\"\n  }\n}\n",
+      "outputs.tf": "output \"payload_sha256\" {\n  description = \"Tracked checksum stored in terraform_data state\"\n  value       = terraform_data.validator.output\n}\n",
+      "variables.tf": "variable \"build_id\" {\n  description = \"Unique build run identifier\"\n  type        = string\n  default     = \"build-101\"\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare built-in terraform_data resource",
+        "pattern": "resource\\s+\"terraform_data\"\\s+\"[a-zA-Z0-9_]+\"",
+        "file": "main.tf",
+        "hint": "resource \"terraform_data\" \"bootstrap\" { ... }"
+      },
+      {
+        "id": "r2",
+        "desc": "Use triggers_replace or input",
+        "pattern": "triggers_replace|input\\s*=",
+        "file": "main.tf",
+        "hint": "Configure triggers_replace to replace legacy null_resource triggers"
+      }
+    ]
+  },
+  {
+    "id": "15-refactoring-with-moved-blocks",
+    "number": 15,
+    "tier": "Advanced",
+    "title": "Exercise 15: Zero-Downtime Refactoring with `moved` Blocks",
+    "objectives": [
+      "Understand declarative state refactoring introduced in Terraform 1.1.",
+      "Move individual resources into `for_each` maps without resource recreation.",
+      "Move resources into child modules declaratively.",
+      "Eliminate reliance on manual, error-prone `terraform state mv` commands in CI/CD."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"services\" {\n  for_each = toset([\"frontend\", \"backend\"])\n\n  filename = \"${path.module}/${each.key}.txt\"\n  content  = \"Service: ${each.key} v2\\n\"\n}\n",
+      "moved.tf": "# TODO: Declare moved blocks to prevent recreation!\n# moved {\n#   from = local_file.frontend\n#   to   = local_file.services[\"frontend\"]\n# }\n# moved {\n#   from = local_file.backend\n#   to   = local_file.services[\"backend\"]\n# }\n",
+      "outputs.tf": "output \"service_files\" {\n  value = { for k, v in local_file.services : k => v.filename }\n}\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"services\" {\n  for_each = toset([\"frontend\", \"backend\"])\n\n  filename = \"${path.module}/${each.key}.txt\"\n  content  = \"Service: ${each.key} v2\\n\"\n}\n",
+      "moved.tf": "moved {\n  from = local_file.frontend\n  to   = local_file.services[\"frontend\"]\n}\n\nmoved {\n  from = local_file.backend\n  to   = local_file.services[\"backend\"]\n}\n",
+      "outputs.tf": "output \"service_files\" {\n  description = \"Map of refactored service files\"\n  value       = { for k, v in local_file.services : k => v.filename }\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare declarative moved block with from and to",
+        "pattern": "moved\\s*{[^}]*from\\s*=[^}]*to\\s*=",
+        "file": "moved.tf",
+        "hint": "moved { from = local_file.backend to = local_file.services[\"backend\"] }"
+      }
+    ]
+  },
+  {
+    "id": "16-declarative-import",
+    "number": 16,
+    "tier": "Advanced",
+    "title": "Exercise 16: Declarative Import (Terraform 1.5+)",
+    "objectives": [
+      "Import existing unmanaged infrastructure into Terraform state declaratively.",
+      "Use the modern `import` block (`to = ...`, `id = ...`).",
+      "Generate HCL code automatically using `terraform plan -generate-config-out`."
+    ],
+    "starter_files": {
+      "imports.tf": "# TODO: Add declarative import block\n# import {\n#   to = local_file.legacy_system\n#   id = \"${path.module}/existing_assets/legacy_system.txt\"\n# }\n",
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO: Define resource \"local_file\" \"legacy_system\" matching the imported file\n",
+      "outputs.tf": "# TODO: Output imported file id\n",
+      "existing_assets/legacy_system.txt": "LEGACY_DATA_DO_NOT_DELETE\n"
+    },
+    "solution_files": {
+      "imports.tf": "import {\n  to = local_file.legacy_system\n  id = \"${path.module}/existing_assets/legacy_system.txt\"\n}\n",
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"legacy_system\" {\n  filename        = \"${path.module}/existing_assets/legacy_system.txt\"\n  content         = \"LEGACY_DATA_DO_NOT_DELETE\\n\"\n  file_permission = \"0644\"\n}\n",
+      "outputs.tf": "output \"imported_file_id\" {\n  description = \"Unique ID of the imported file\"\n  value       = local_file.legacy_system.id\n}\n",
+      "existing_assets/legacy_system.txt": "LEGACY_DATA_DO_NOT_DELETE\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare declarative import block with to and id",
+        "pattern": "import\\s*{[^}]*to\\s*=[^}]*id\\s*=",
+        "file": "imports.tf",
+        "hint": "import { to = local_file.legacy_system id = \"...\" }"
+      }
+    ]
+  },
+  {
+    "id": "17-remote-backends-and-locking",
+    "number": 17,
+    "tier": "Advanced",
+    "title": "Exercise 17: State Backends & Locking Semantics",
+    "objectives": [
+      "Configure state storage backends (`local`, `s3`, `http`).",
+      "Understand how state locking prevents race conditions and state corruption.",
+      "Migrate state between backends with `terraform init -migrate-state`.",
+      "Use partial backend configuration and `-backend-config` flags."
+    ],
+    "starter_files": {
+      "backend.tf": "# TODO: Configure custom local backend\n# terraform {\n#   backend \"local\" {\n#     path = \"custom_state/dev.tfstate\"\n#   }\n# }\n",
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"backend_test\" {\n  filename = \"${path.module}/backend_status.txt\"\n  content  = \"State successfully stored in custom backend location\\n\"\n}\n"
+    },
+    "solution_files": {
+      "backend.tf": "terraform {\n  backend \"local\" {\n    path = \"custom_state/dev.tfstate\"\n  }\n}\n",
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"backend_test\" {\n  filename = \"${path.module}/backend_status.txt\"\n  content  = \"State successfully stored in custom backend location\\n\"\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Configure backend block in terraform",
+        "pattern": "backend\\s+\"local\"\\s*{",
+        "file": "backend.tf",
+        "hint": "terraform { backend \"local\" { path = \"...\" } }"
+      }
+    ]
+  },
+  {
+    "id": "18-multi-provider-aliasing",
+    "number": 18,
+    "tier": "Advanced",
+    "title": "Exercise 18: Provider Aliases & Multi-Region Topology",
+    "objectives": [
+      "Configure multiple instances of a provider using `alias`.",
+      "Target specific resources to specific provider instances via `provider = ...`.",
+      "Pass aliased providers down to child modules with `providers = { ... }`."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\n# TODO 1: Create resource \"local_file\" \"primary_site\"\n# Filename: \"${path.module}/primary_region.txt\"\n\n# TODO 2: Create resource \"local_file\" \"secondary_site\"\n# Filename: \"${path.module}/secondary_region.txt\"\n",
+      "outputs.tf": "# TODO: Output primary and secondary site paths\n",
+      "providers.tf": "# TODO: Define two local provider instances:\n# 1. Default instance\n# 2. Aliased instance (alias = \"dr_region\")\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"primary_site\" {\n  filename = \"${path.module}/primary_region.txt\"\n  content  = \"REGION: us-east-1 (Primary Active)\\n\"\n}\n\nresource \"local_file\" \"secondary_site\" {\n  provider = local.dr_region\n\n  filename = \"${path.module}/secondary_region.txt\"\n  content  = \"REGION: us-west-2 (Secondary Standby DR)\\n\"\n}\n",
+      "outputs.tf": "output \"primary_endpoint\" {\n  description = \"Path to primary site deployment file\"\n  value       = local_file.primary_site.filename\n}\n\noutput \"secondary_endpoint\" {\n  description = \"Path to secondary standby site deployment file\"\n  value       = local_file.secondary_site.filename\n}\n",
+      "providers.tf": "provider \"local\" {\n  # Default provider instance\n}\n\nprovider \"local\" {\n  alias = \"dr_region\"\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare provider with alias in providers.tf",
+        "pattern": "alias\\s*=\\s*\"dr_region\"",
+        "file": "providers.tf",
+        "hint": "provider \"local\" { alias = \"dr_region\" }"
+      },
+      {
+        "id": "r2",
+        "desc": "Reference provider alias on secondary resource",
+        "pattern": "provider\\s*=\\s*local\\.dr_region",
+        "file": "main.tf",
+        "hint": "provider = local.dr_region on secondary resource"
+      }
+    ]
+  },
+  {
+    "id": "19-testing-framework-tftest",
+    "number": 19,
+    "tier": "Advanced",
+    "title": "Exercise 19: Native Testing Framework (`terraform test`)",
+    "objectives": [
+      "Author test suites using native `.tftest.hcl` files (Terraform 1.6+).",
+      "Write `run` blocks for unit tests (`command = plan`) and integration tests (`command = apply`).",
+      "Assert output values, preconditions, and invalid variable rejection."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"config\" {\n  filename = \"${path.module}/app.json\"\n  content = jsonencode({\n    env  = var.app_env\n    port = var.assigned_port\n  })\n}\n",
+      "outputs.tf": "output \"app_env\" {\n  value = var.app_env\n}\n\noutput \"assigned_port\" {\n  value = var.assigned_port\n}\n",
+      "variables.tf": "variable \"app_env\" {\n  type    = string\n  default = \"staging\"\n}\n\nvariable \"assigned_port\" {\n  type    = number\n  default = 8080\n}\n",
+      "tests/validation.tftest.hcl": "# TODO: Write run \"verify_env\" with command = plan and assert block\n\n# TODO: Write run \"verify_port_range\" with command = plan and assert block\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nresource \"local_file\" \"config\" {\n  filename = \"${path.module}/app.json\"\n  content = jsonencode({\n    env  = var.app_env\n    port = var.assigned_port\n  })\n}\n",
+      "outputs.tf": "output \"app_env\" {\n  description = \"Configured application environment\"\n  value       = var.app_env\n}\n\noutput \"assigned_port\" {\n  description = \"Configured application port\"\n  value       = var.assigned_port\n}\n",
+      "variables.tf": "variable \"app_env\" {\n  description = \"Target environment for test verification\"\n  type        = string\n  default     = \"staging\"\n}\n\nvariable \"assigned_port\" {\n  description = \"Assigned network port\"\n  type        = number\n  default     = 8080\n}\n",
+      "tests/validation.tftest.hcl": "run \"verify_env\" {\n  command = plan\n\n  assert {\n    condition     = output.app_env == \"staging\"\n    error_message = \"Default environment must be staging.\"\n  }\n}\n\nrun \"verify_port_range\" {\n  command = plan\n\n  variables {\n    assigned_port = 9090\n  }\n\n  assert {\n    condition     = output.assigned_port >= 1024 && output.assigned_port <= 65535\n    error_message = \"Assigned port must be an unprivileged port (1024-65535).\"\n  }\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare run block in test file",
+        "pattern": "run\\s+\"[a-zA-Z0-9_]+\"\\s*{",
+        "file": "tests/validation.tftest.hcl",
+        "hint": "run \"verify_staging\" { command = plan assert { ... } }"
+      },
+      {
+        "id": "r2",
+        "desc": "Declare assert block with condition and error_message",
+        "pattern": "assert\\s*{[^}]*condition\\s*=[^}]*error_message\\s*=",
+        "file": "tests/validation.tftest.hcl",
+        "hint": "assert { condition = ... error_message = \"...\" }"
+      }
+    ]
+  },
+  {
+    "id": "20-secrets-and-sensitive-data",
+    "number": 20,
+    "tier": "Advanced",
+    "title": "Exercise 20: Secrets Management & State Hygiene",
+    "objectives": [
+      "Generate cryptographic keys and passwords using `hashicorp/tls` and `hashicorp/random`.",
+      "Mask sensitive data in plans, logs, and outputs using `sensitive = true`.",
+      "Use `nonsensitive()` prudently when non-sensitive digests are needed.",
+      "Protect state files from leaking into Git."
+    ],
+    "starter_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n    random = {\n      source  = \"hashicorp/random\"\n      version = \"~> 3.6.0\"\n    }\n    tls = {\n      source  = \"hashicorp/tls\"\n      version = \"~> 4.0.0\"\n    }\n  }\n}\n\n# TODO 1: Generate TLS RSA 4096 private key using resource \"tls_private_key\" \"app_key\"\n\n# TODO 2: Generate random password (length 24) using resource \"random_password\" \"db_secret\"\n\n# TODO 3: Save encrypted credentials into \"${path.module}/secure_credentials.json\"\n",
+      "outputs.tf": "# TODO: Output public key, sensitive password, and non-sensitive SHA256 digest\n"
+    },
+    "solution_files": {
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n    random = {\n      source  = \"hashicorp/random\"\n      version = \"~> 3.6.0\"\n    }\n    tls = {\n      source  = \"hashicorp/tls\"\n      version = \"~> 4.0.0\"\n    }\n  }\n}\n\nresource \"tls_private_key\" \"app_key\" {\n  algorithm = \"RSA\"\n  rsa_bits  = 4096\n}\n\nresource \"random_password\" \"db_secret\" {\n  length           = 24\n  special          = true\n  override_special = \"!#$%&*()-_=+[]{}<>:?\"\n}\n\nresource \"local_file\" \"secure_manifest\" {\n  filename        = \"${path.module}/secure_credentials.json\"\n  file_permission = \"0600\"\n  content = jsonencode({\n    public_key  = tls_private_key.app_key.public_key_openssh\n    private_key = tls_private_key.app_key.private_key_pem\n    db_password = random_password.db_secret.result\n  })\n}\n",
+      "outputs.tf": "output \"public_key_openssh\" {\n  description = \"Public SSH key (safe to expose publicly)\"\n  value       = tls_private_key.app_key.public_key_openssh\n}\n\noutput \"db_password\" {\n  description = \"Masked database password\"\n  value       = random_password.db_secret.result\n  sensitive   = true\n}\n\noutput \"password_sha256\" {\n  description = \"Safe cryptographic fingerprint of the secret password\"\n  value       = sha256(nonsensitive(random_password.db_secret.result))\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Declare sensitive = true on output",
+        "pattern": "sensitive\\s*=\\s*true",
+        "file": "outputs.tf",
+        "hint": "Mark output \"db_password\" with sensitive = true"
+      },
+      {
+        "id": "r2",
+        "desc": "Use sha256() to expose safe fingerprint of secret",
+        "pattern": "sha256\\(",
+        "file": "outputs.tf",
+        "hint": "value = sha256(random_password.db_secret.result)"
+      }
+    ]
+  },
+  {
+    "id": "21-capstone-production-system",
+    "number": 21,
+    "tier": "Capstone",
+    "title": "Exercise 21: Capstone - Production Multi-Tier System",
+    "objectives": [
+      "Synthesize all mastered concepts into a unified production-grade architecture.",
+      "Integrate modular child modules: `networking` and `secure_vault`.",
+      "Implement continuous architectural assertions using `check` blocks (Terraform 1.5+).",
+      "Write comprehensive native automated tests in `tests/capstone.tftest.hcl`."
+    ],
+    "starter_files": {
+      "checks.tf": "# TODO: Add check \"network_verification\" block with assert\n",
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n    tls = {\n      source  = \"hashicorp/tls\"\n      version = \"~> 4.0.0\"\n    }\n  }\n}\n\n# TODO 1: Call module \"network\"\n\n# TODO 2: Call module \"vault\"\n\n# TODO 3: Generate root environment_summary.json\n",
+      "tests/capstone.tftest.hcl": "# TODO: Write test suite for capstone\n",
+      "modules/networking/main.tf": "# TODO: Generate subnet CIDR list using cidrsubnet() and write network manifest to \"${path.module}/../../network.json\"\n",
+      "modules/networking/outputs.tf": "# TODO: Output subnets and manifest_path\n",
+      "modules/networking/variables.tf": "variable \"vpc_cidr\" {\n  type    = string\n  default = \"10.0.0.0/16\"\n}\n\nvariable \"subnet_count\" {\n  type    = number\n  default = 3\n}\n",
+      "modules/secure_vault/main.tf": "# TODO: Generate TLS key and write vault token\n",
+      "modules/secure_vault/outputs.tf": "# TODO: Expose public_key and vault_token (sensitive)\n",
+      "modules/secure_vault/variables.tf": "variable \"service_name\" {\n  type = string\n}\n"
+    },
+    "solution_files": {
+      "checks.tf": "check \"network_manifest_check\" {\n  data \"local_file\" \"verify_manifest\" {\n    filename   = \"${path.module}/network.json\"\n    depends_on = [module.network]\n  }\n\n  assert {\n    condition     = length(data.local_file.verify_manifest.content) > 0\n    error_message = \"Network manifest was not generated or is empty.\"\n  }\n}\n",
+      "main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n    tls = {\n      source  = \"hashicorp/tls\"\n      version = \"~> 4.0.0\"\n    }\n  }\n}\n\nmodule \"network\" {\n  source = \"./modules/networking\"\n\n  vpc_cidr     = \"10.100.0.0/16\"\n  subnet_count = 3\n}\n\nmodule \"vault\" {\n  source = \"./modules/secure_vault\"\n\n  service_name = var.project_name\n}\n\nresource \"local_file\" \"summary\" {\n  filename = \"${path.module}/environment_summary.json\"\n  content = jsonencode({\n    project     = var.project_name\n    environment = var.environment\n    subnets     = module.network.subnets\n    public_key  = module.vault.public_key\n  })\n}\n",
+      "outputs.tf": "output \"summary_path\" {\n  description = \"Path to generated environment summary\"\n  value       = local_file.summary.filename\n}\n\noutput \"subnet_allocations\" {\n  description = \"Subnets provisioned by networking module\"\n  value       = module.network.subnets\n}\n",
+      "variables.tf": "variable \"project_name\" {\n  description = \"Global project identifier\"\n  type        = string\n  default     = \"phoenix-core\"\n}\n\nvariable \"environment\" {\n  description = \"Deployment target environment\"\n  type        = string\n  default     = \"production\"\n}\n",
+      "tests/capstone.tftest.hcl": "run \"verify_capstone_plan\" {\n  command = plan\n\n  assert {\n    condition     = var.project_name == \"phoenix-core\"\n    error_message = \"Project name default must be phoenix-core.\"\n  }\n}\n\nrun \"verify_custom_env\" {\n  command = plan\n\n  variables {\n    environment = \"staging\"\n  }\n\n  assert {\n    condition     = var.environment == \"staging\"\n    error_message = \"Environment variable override failed.\"\n  }\n}\n",
+      "modules/networking/main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n  }\n}\n\nlocals {\n  subnets = [\n    for i in range(var.subnet_count) : cidrsubnet(var.vpc_cidr, 8, i)\n  ]\n}\n\nresource \"local_file\" \"network_manifest\" {\n  filename = \"${path.module}/../../network.json\"\n  content = jsonencode({\n    vpc_cidr = var.vpc_cidr\n    subnets  = local.subnets\n  })\n}\n",
+      "modules/networking/outputs.tf": "output \"subnets\" {\n  description = \"List of calculated subnet CIDRs\"\n  value       = local.subnets\n}\n\noutput \"manifest_path\" {\n  description = \"Filesystem path to network manifest\"\n  value       = local_file.network_manifest.filename\n}\n",
+      "modules/networking/variables.tf": "variable \"vpc_cidr\" {\n  description = \"Base CIDR block for the VPC\"\n  type        = string\n  default     = \"10.0.0.0/16\"\n}\n\nvariable \"subnet_count\" {\n  description = \"Number of subnets to calculate\"\n  type        = number\n  default     = 3\n}\n",
+      "modules/secure_vault/main.tf": "terraform {\n  required_version = \">= 1.5.0\"\n  required_providers {\n    local = {\n      source  = \"hashicorp/local\"\n      version = \"~> 2.5.0\"\n    }\n    tls = {\n      source  = \"hashicorp/tls\"\n      version = \"~> 4.0.0\"\n    }\n  }\n}\n\nresource \"tls_private_key\" \"service_cert\" {\n  algorithm = \"RSA\"\n  rsa_bits  = 2048\n}\n\nresource \"local_file\" \"vault_record\" {\n  filename        = \"${path.module}/../../vault_${var.service_name}.json\"\n  file_permission = \"0600\"\n  content = jsonencode({\n    service    = var.service_name\n    public_key = tls_private_key.service_cert.public_key_openssh\n  })\n}\n",
+      "modules/secure_vault/outputs.tf": "output \"public_key\" {\n  description = \"Public SSH key for the service\"\n  value       = tls_private_key.service_cert.public_key_openssh\n}\n\noutput \"vault_file\" {\n  description = \"Path to vault security record\"\n  value       = local_file.vault_record.filename\n}\n",
+      "modules/secure_vault/variables.tf": "variable \"service_name\" {\n  description = \"Service name requiring vault registration\"\n  type        = string\n}\n"
+    },
+    "validation_rules": [
+      {
+        "id": "r1",
+        "desc": "Instantiate production modular architecture",
+        "pattern": "module\\s+\"network\"|module\\s+\"vault\"",
+        "file": "main.tf",
+        "hint": "Instantiate modules 'network' and 'vault'"
+      },
+      {
+        "id": "r2",
+        "desc": "Declare post-condition check block in checks.tf",
+        "pattern": "check\\s+\"[a-zA-Z0-9_]+\"\\s*{",
+        "file": "checks.tf",
+        "hint": "check \"vault_file_integrity\" { ... }"
+      }
+    ]
+  }
+]

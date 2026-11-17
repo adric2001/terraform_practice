@@ -63,5 +63,20 @@ class TestLambdaHandler(unittest.TestCase):
         for q in exam["questions"]:
             self.assertEqual(q["domain"], "Domain 4: Use Terraform Outside the Core Workflow")
 
+    @patch("lambda_handler.sessions_table")
+    def test_handle_post_lab_complete(self, mock_sess_table):
+        resp = lambda_handler.handle_post_lab_complete("test_user_123", {
+            "lab_id": "01-first-resource",
+            "title": "Exercise 01: Your First Resource"
+        })
+        self.assertEqual(resp["statusCode"], 200)
+        body = json.loads(resp["body"])
+        self.assertEqual(body["lab_id"], "01-first-resource")
+        mock_sess_table.put_item.assert_called_once()
+        saved_item = mock_sess_table.put_item.call_args[1]["Item"]
+        self.assertEqual(saved_item["user_id"], "test_user_123")
+        self.assertEqual(saved_item["lab_id"], "01-first-resource")
+        self.assertEqual(saved_item["type"], "lab_completion")
+
 if __name__ == "__main__":
     unittest.main()

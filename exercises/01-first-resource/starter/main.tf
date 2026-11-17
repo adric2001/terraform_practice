@@ -2,10 +2,6 @@ terraform {
   required_version = ">= 1.5.0"
   required_providers {
     # TODO: Add hashicorp/local provider requirement (~> 2.5)
-    local = {
-      source = "hashicorp/local"
-      version = "~> 2.5.0"
-    }
   }
 }
 
@@ -13,9 +9,3 @@ terraform {
 # - filename: "${path.module}/welcome.txt"
 # - content: "Hello, Terraform! I am managing infrastructure as code."
 # - file_permission: "0644"
- 
-resource local_file "welcome_note" { 
-  filename = "${path.module}/welcome.txt"
-  content = "Hello, Terraform! I am managing infrastructure as code."
-  file_permission = "0644"
-}

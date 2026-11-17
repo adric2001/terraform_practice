@@ -369,6 +369,14 @@ resource "aws_apigatewayv2_route" "route_sessions" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
+resource "aws_apigatewayv2_route" "route_labs_complete" {
+  api_id             = aws_apigatewayv2_api.http_api.id
+  route_key          = "POST /api/labs/complete"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+}
+
 resource "aws_apigatewayv2_route" "route_weak_areas" {
   api_id             = aws_apigatewayv2_api.http_api.id
   route_key          = "GET /api/weak-areas"

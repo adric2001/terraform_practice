@@ -192,6 +192,8 @@ def handle_get_profile(user_id):
     
     verdict = "EXAM READY" if readiness_score >= 85 and overall_accuracy >= 80 else ("MARGINAL PASS" if readiness_score >= 70 else "NOT READY")
 
+    completed_labs = [s["lab_id"] for s in recent_sessions if s.get("type") == "lab_completion" and "lab_id" in s]
+
     return api_response(200, {
         "user_id": user_id,
         "total_available_questions": total_available_q,
@@ -200,6 +202,7 @@ def handle_get_profile(user_id):
         "overall_accuracy": overall_accuracy,
         "readiness_score": readiness_score,
         "verdict": verdict,
+        "completed_labs": completed_labs,
         "domain_summary": domain_summary,
         "recent_sessions": recent_sessions
     })
@@ -383,6 +386,23 @@ def handle_post_custom_exam(user_id, body):
         "questions": selected_questions
     })
 
+def handle_post_lab_complete(user_id, body):
+    """Record completed hands-on exercise for user."""
+    lab_id = body.get("lab_id", "unknown")
+    title = body.get("title", lab_id)
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+    
+    item = {
+        "user_id": user_id,
+        "session_id": f"lab_{lab_id}",
+        "type": "lab_completion",
+        "lab_id": lab_id,
+        "title": title,
+        "created_at": timestamp
+    }
+    sessions_table.put_item(Item=item)
+    return api_response(200, {"message": f"Lab {lab_id} marked as completed", "lab_id": lab_id})
+
 def lambda_handler(event, context):
     """Main API Gateway HTTP API v2 Router."""
     http_method = event.get("requestContext", {}).get("http", {}).get("method", "GET")
@@ -408,6 +428,9 @@ def lambda_handler(event, context):
         
     elif raw_path.endswith("/api/sessions") and http_method == "POST":
         return handle_post_session(user_id, body)
+        
+    elif raw_path.endswith("/api/labs/complete") and http_method == "POST":
+        return handle_post_lab_complete(user_id, body)
         
     elif raw_path.endswith("/api/weak-areas") and http_method == "GET":
         return handle_get_weak_areas(user_id)
