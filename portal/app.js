@@ -75,6 +75,11 @@
   const syncStat = document.getElementById("syncStat");
   const userCountText = document.getElementById("userCountText");
   const communityStat = document.getElementById("communityStat");
+  const examProgressStat = document.getElementById("examProgressStat");
+  const quickExamBadge = document.getElementById("quickExamBadge");
+  const curriculumCounterText = document.getElementById("curriculumCounterText");
+  const curriculumProgressFill = document.getElementById("curriculumProgressFill");
+  const curriculumTableBody = document.getElementById("curriculumTableBody");
 
   // Welcome & Weak Areas
   const welcomeCard = document.getElementById("welcomeCard");
@@ -489,6 +494,9 @@
 
     // Update 5-Point Readiness Checklist
     updateChecklistUI(questionsAttempted, parseFloat(accuracyPct), weakDomains);
+
+    // Update 10-Exam Curriculum Tracker
+    renderCurriculumTracker();
   }
 
   function updateChecklistUI(qCount, acc, weakDomains) {
@@ -535,11 +543,176 @@
   }
 
   // ===========================================================================
+  // 10-Exam Curriculum & Progress Tracking Engine
+  // ===========================================================================
+  const EXAM_CURRICULUM = [
+    { num: 1, title: "Exam 01 - Diagnostic Baseline Assessment", focus: "All 9 Domains (Comprehensive)", total_q: 25 },
+    { num: 2, title: "Exam 02 - Core Workflow & CLI Deep Dive", focus: "Domains 3, 4, 6 (CLI & Workflow)", total_q: 25 },
+    { num: 3, title: "Exam 03 - HCL Syntax, Variables, Collections & Functions", focus: "Domain 8 (HCL & Configuration)", total_q: 25 },
+    { num: 4, title: "Exam 04 - State Architecture, Backends & State Surgery", focus: "Domain 7 (State Storage & Surgery)", total_q: 25 },
+    { num: 5, title: "Exam 05 - Modules, Registries & Architecture", focus: "Domain 5 (Modules & Registries)", total_q: 25 },
+    { num: 6, title: "Exam 06 - Resource Dependencies, Lifecycles & Dynamic Blocks", focus: "Domains 4, 8 (Dependencies & Loops)", total_q: 25 },
+    { num: 7, title: "Exam 07 - Terraform 004 Modern Features", focus: "Domains 4, 8 (004 Modern Features)", total_q: 25 },
+    { num: 8, title: "Exam 08 - Security, Secrets & State Hygiene", focus: "Domains 7, 8, 9 (Security & Secrets)", total_q: 25 },
+    { num: 9, title: "Exam 09 - Terraform Cloud, Enterprise & Team Workflows", focus: "Domain 9 (Cloud & Enterprise)", total_q: 25 },
+    { num: 10, title: "Exam 10 - Final Comprehensive Mock Exam (004 Blueprint)", focus: "All 9 Domains (Final 004 Blueprint)", total_q: 25 }
+  ];
+
+  function getExamStatsFromHistory(examNum) {
+    const history = userProgress.history || [];
+    const numPad = examNum.toString().padStart(2, "0");
+    const numStr = examNum.toString();
+
+    const matching = history.filter(s => {
+      if (s.type === "lab_completion") return false;
+      const t = (s.title || s.exam_id || "").toLowerCase();
+      return t.includes(`exam ${numPad}`) || t.includes(`exam ${numStr}`) || t.includes(`exam_${numPad}`);
+    });
+
+    if (matching.length === 0) return null;
+
+    let bestScore = 0;
+    let latestAttempt = matching[0];
+
+    matching.forEach(s => {
+      const score = Number(s.score_percentage) || 0;
+      if (score > bestScore) bestScore = score;
+      const sDate = new Date(s.created_at || 0);
+      const lDate = new Date(latestAttempt.created_at || 0);
+      if (sDate > lDate) {
+        latestAttempt = s;
+      }
+    });
+
+    return {
+      attempts: matching.length,
+      bestScore: Math.round(bestScore),
+      latestScore: Math.round(Number(latestAttempt.score_percentage) || 0),
+      latestDate: latestAttempt.created_at,
+      passed: bestScore >= 70
+    };
+  }
+
+  function renderCurriculumTracker() {
+    if (!curriculumTableBody) return;
+
+    let completedCount = 0;
+    let passedCount = 0;
+
+    const rowsHtml = EXAM_CURRICULUM.map(exam => {
+      const stats = getExamStatsFromHistory(exam.num);
+      let statusBadge = "";
+      let bestScoreDisplay = "--";
+      let latestDisplay = "--";
+      let actionBtnText = "Launch";
+      let actionBtnClass = "btn btn-primary btn-sm";
+
+      if (stats) {
+        completedCount++;
+        if (stats.passed) passedCount++;
+
+        const isPass = stats.passed;
+        const badgeClass = isPass ? "status-badge-completed" : "status-badge-review";
+        const badgeIcon = isPass ? "✅" : "⚠️";
+        const badgeLabel = isPass ? "PASS" : "REVIEW";
+        statusBadge = `<span class="${badgeClass}">${badgeIcon} ${badgeLabel} (${stats.bestScore}%)</span>`;
+        bestScoreDisplay = `<strong style="color: ${isPass ? 'var(--success)' : 'var(--warning)'}; font-size: 0.95rem;">${stats.bestScore}%</strong>`;
+        
+        let dateStr = "Recently";
+        if (stats.latestDate) {
+          try {
+            const d = new Date(stats.latestDate);
+            if (!isNaN(d.getTime())) {
+              dateStr = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+            } else {
+              dateStr = stats.latestDate.split(" ")[0];
+            }
+          } catch (e) {
+            dateStr = stats.latestDate;
+          }
+        }
+        latestDisplay = `<span style="font-size: 0.8rem; color: var(--text-muted);">${dateStr} (${stats.attempts}x)</span>`;
+        actionBtnText = "Retake";
+        actionBtnClass = "btn btn-sm";
+      } else {
+        statusBadge = `<span class="status-badge-notstarted">⚪ Not Started</span>`;
+      }
+
+      return `
+        <tr>
+          <td><strong style="color: #94a3b8; font-family: monospace;">#${exam.num.toString().padStart(2, "0")}</strong></td>
+          <td>
+            <div style="font-weight: 600; color: #fff;">${exam.title.replace(/^Exam \d+ - /, "")}</div>
+          </td>
+          <td><span style="font-size: 0.82rem; color: #a5b4fc; background: rgba(99, 102, 241, 0.1); padding: 2px 8px; border-radius: 4px;">${exam.focus}</span></td>
+          <td>${statusBadge}</td>
+          <td>${bestScoreDisplay}</td>
+          <td>${latestDisplay}</td>
+          <td style="text-align: right;">
+            <button class="${actionBtnClass} curriculum-launch-btn" data-exam-num="${exam.num}" style="padding: 4px 12px; font-size: 0.78rem;">
+              ${actionBtnText}
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    curriculumTableBody.innerHTML = rowsHtml;
+
+    // Attach click events
+    curriculumTableBody.querySelectorAll(".curriculum-launch-btn").forEach(btn => {
+      btn.onclick = () => {
+        const num = parseInt(btn.getAttribute("data-exam-num"), 10);
+        launchCurriculumExam(num);
+      };
+    });
+
+    // Update Ribbon & Header Stats
+    if (examProgressStat) {
+      examProgressStat.innerText = `${completedCount} / 10`;
+    }
+    if (quickExamBadge) {
+      quickExamBadge.innerText = `${completedCount} / 10 Completed`;
+      if (completedCount >= 10) {
+        quickExamBadge.style.color = "var(--success)";
+      }
+    }
+    if (curriculumCounterText) {
+      curriculumCounterText.innerText = `${completedCount} of 10 Completed (${passedCount} Passed)`;
+    }
+    if (curriculumProgressFill) {
+      curriculumProgressFill.style.width = `${(completedCount / 10) * 100}%`;
+    }
+
+    // Update dropdown options in examSelect with completion marks
+    if (examSelect && examSelect.options) {
+      Array.from(examSelect.options).forEach(opt => {
+        const num = parseInt(opt.value, 10);
+        const meta = EXAM_CURRICULUM.find(e => e.num === num);
+        if (!meta) return;
+        const stats = getExamStatsFromHistory(num);
+        if (stats) {
+          const icon = stats.passed ? "✅" : "⚠️";
+          opt.text = `${icon} ${meta.title} (${stats.bestScore}%)`;
+        } else {
+          opt.text = meta.title;
+        }
+      });
+    }
+  }
+
+  function launchCurriculumExam(num) {
+    const meta = EXAM_CURRICULUM.find(e => e.num === num) || { title: `Exam ${num.toString().padStart(2, "0")}` };
+    const prefix = `q${num}_`;
+    const examQs = allQuestions.filter(q => q.id.startsWith(prefix));
+    startExam(meta.title, examQs.length > 0 ? examQs : allQuestions.slice(0, 25), false);
+  }
+
+  // ===========================================================================
   // Exam Engine (Study Mode vs Timed Exam Mode)
   // ===========================================================================
   startDiagnosticBtn.onclick = () => {
-    const examQs = allQuestions.filter(q => q.id.startsWith("q1_"));
-    startExam("Exam 01 - Diagnostic Baseline Assessment", examQs.length > 0 ? examQs : allQuestions.slice(0, 25), false);
+    launchCurriculumExam(1);
   };
 
   function startExam(title, questions, isTimed = false) {
@@ -915,11 +1088,8 @@
 
   // Action Buttons
   startSelectedExamBtn.onclick = () => {
-    const examNum = examSelect.value;
-    const title = examSelect.options[examSelect.selectedIndex].text;
-    const prefix = `q${examNum}_`;
-    const examQs = allQuestions.filter(q => q.id.startsWith(prefix));
-    startExam(title, examQs.length > 0 ? examQs : allQuestions.slice(0, 25), false);
+    const examNum = parseInt(examSelect.value, 10);
+    launchCurriculumExam(examNum);
   };
 
   start57MockBtn.onclick = () => {

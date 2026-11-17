@@ -13,6 +13,7 @@ import glob
 import time
 import uuid
 import random
+import re
 from decimal import Decimal
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -220,6 +221,16 @@ def handle_get_profile(user_id):
 
     completed_labs = [s["lab_id"] for s in recent_sessions if s.get("type") == "lab_completion" and "lab_id" in s]
 
+    completed_exams = []
+    for s in valid_sessions:
+        title = s.get("title") or s.get("exam_id") or ""
+        m = re.search(r"Exam\s*0?(\d+)", title, re.IGNORECASE)
+        if m:
+            exam_num = int(m.group(1))
+            if exam_num not in completed_exams:
+                completed_exams.append(exam_num)
+    completed_exams.sort()
+
     return api_response(200, {
         "user_id": user_id,
         "total_available_questions": total_available_q,
@@ -229,6 +240,7 @@ def handle_get_profile(user_id):
         "readiness_score": readiness_score,
         "verdict": verdict,
         "completed_labs": completed_labs,
+        "completed_exams": completed_exams,
         "domain_summary": domain_summary,
         "recent_sessions": recent_sessions
     })

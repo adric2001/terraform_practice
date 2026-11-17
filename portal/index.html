@@ -56,6 +56,10 @@
           <span class="lbl">Questions Attempted</span>
         </div>
         <div class="ribbon-stat-item">
+          <span id="examProgressStat" class="val" style="color: #facc15;">0 / 10</span>
+          <span class="lbl">Exams Completed</span>
+        </div>
+        <div class="ribbon-stat-item">
           <span id="labStat" class="val" style="color: #a5b4fc;">0 / 21</span>
           <span class="lbl">Labs Completed</span>
         </div>
@@ -161,8 +165,11 @@
         <div class="action-card">
           <div class="action-card-header">
             <div class="action-card-icon">📝</div>
-            <div class="action-card-info">
-              <h4>10 Modular Practice Exams</h4>
+            <div class="action-card-info" style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <h4 style="margin: 0;">10 Modular Practice Exams</h4>
+                <span id="quickExamBadge" style="font-size: 0.75rem; background: rgba(250, 204, 21, 0.15); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); padding: 2px 8px; border-radius: 9999px; font-weight: 700;">0 / 10 Done</span>
+              </div>
               <p>25-question exams with on-the-fly right/wrong feedback and in-depth explanations.</p>
             </div>
           </div>
@@ -241,6 +248,46 @@
             </div>
           </div>
           <button id="openCustomBuilderBtn" class="btn" style="width: 100%;">Build Custom Exam</button>
+        </div>
+      </div>
+
+      <!-- 10-Exam Curriculum & Progress Tracker Section -->
+      <div class="curriculum-tracker-card">
+        <div class="curriculum-header">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(250, 204, 21, 0.15); border: 1px solid rgba(250, 204, 21, 0.3); display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">📋</div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.15rem; color: #fff;">10-Exam Curriculum & Progress Tracker</h3>
+              <p style="margin: 3px 0 0; font-size: 0.85rem; color: var(--text-muted);">
+                Track your completion across all 10 modular exams. Score &ge; 70% to earn a PASS badge.
+              </p>
+            </div>
+          </div>
+          <div class="curriculum-badge-counter">
+            <span id="curriculumCounterText">0 of 10 Completed</span>
+            <div class="curriculum-progress-mini">
+              <div id="curriculumProgressFill" class="curriculum-progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="curriculum-table-responsive">
+          <table class="curriculum-table">
+            <thead>
+              <tr>
+                <th style="width: 75px;">Exam #</th>
+                <th>Exam Name</th>
+                <th>Blueprint Focus</th>
+                <th>Status</th>
+                <th>Best Score</th>
+                <th>Latest Attempt</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="curriculumTableBody">
+              <!-- Populated dynamically by app.js -->
+            </tbody>
+          </table>
         </div>
       </div>
       
