@@ -1,0 +1,361 @@
+{
+  "exam_id": 6,
+  "title": "Resource Dependencies, Lifecycles & Dynamic Blocks",
+  "description": "In-depth testing on implicit/explicit dependencies, lifecycle rules, zero-downtime updates, and dynamic blocks.",
+  "domain_focus": "Domain 4, 8",
+  "total_questions": 25,
+  "passing_percentage": 70,
+  "time_limit_minutes": 60,
+  "questions": [
+    {
+      "id": "q6_01",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "What is an implicit dependency in Terraform?",
+      "options": [
+        "A. A dependency declared using the 'depends_on' meta-argument.",
+        "B. A dependency inferred automatically by Terraform when an attribute of one resource is referenced in the configuration of another resource.",
+        "C. A dependency specified in the provider documentation.",
+        "D. A dependency configured via an external shell script."
+      ],
+      "answer": "B",
+      "explanation": "Terraform automatically analyzes expressions across resources. If Resource B references 'aws_instance.web.id', Terraform infers that Resource A must be created before Resource B. This is an implicit dependency.",
+      "recommended_exercise": "04-resource-dependencies"
+    },
+    {
+      "id": "q6_02",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "When is the 'depends_on' meta-argument necessary?",
+      "options": [
+        "A. For every resource created in Terraform.",
+        "B. Only when an ordering dependency exists between two resources or modules that is NOT captured by attribute references (e.g. an IAM policy must be attached before an application tries to use it).",
+        "C. To prevent a resource from ever being destroyed.",
+        "D. To import existing resources into state."
+      ],
+      "answer": "B",
+      "explanation": "'depends_on' is an explicit dependency tool. It should only be used when there is an invisible dependency between resources that Terraform's graph cannot see through direct attribute interpolation.",
+      "recommended_exercise": "04-resource-dependencies"
+    },
+    {
+      "id": "q6_03",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "What error occurs if Resource A depends on Resource B, and Resource B depends on Resource A?",
+      "options": [
+        "A. Deadlock exception",
+        "B. Cycle error (Cyclic dependency)",
+        "C. Timeout error",
+        "D. State corruption error"
+      ],
+      "answer": "B",
+      "explanation": "Terraform represents dependencies as a Directed Acyclic Graph (DAG). If a circular reference exists (A -> B -> A), Terraform detects the cycle during validation/planning and halts with a 'Cycle:' error.",
+      "recommended_exercise": "04-resource-dependencies"
+    },
+    {
+      "id": "q6_04",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "What does 'lifecycle { ignore_changes = [tags[\"Environment\"]] }' do?",
+      "options": [
+        "A. Deletes the Environment tag immediately.",
+        "B. Prevents Terraform from updating or reverting changes made to the 'Environment' tag key if it is modified out-of-band by an external system or cloud console.",
+        "C. Ignores all tags across all resources.",
+        "D. Sets the tag to null."
+      ],
+      "answer": "B",
+      "explanation": "'ignore_changes' instructs Terraform to ignore differences between the configuration and the real-world attribute during planning. Specifying a map key ignores only that specific tag key.",
+      "recommended_exercise": "07-lifecycle-rules"
+    },
+    {
+      "id": "q6_05",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "How can you ignore all attribute changes made to a resource after its initial creation?",
+      "options": [
+        "A. lifecycle { ignore_changes = all }",
+        "B. lifecycle { ignore_changes = [\"*\"] }",
+        "C. lifecycle { static = true }",
+        "D. lifecycle { frozen = true }"
+      ],
+      "answer": "A",
+      "explanation": "Setting 'ignore_changes = all' causes Terraform to ignore all changes made to the resource after creation, effectively treating it as static unmanaged configuration once provisioned.",
+      "recommended_exercise": "07-lifecycle-rules"
+    },
+    {
+      "id": "q6_06",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "What is the purpose of 'replace_triggered_by' in a resource's lifecycle block (introduced in Terraform 1.2+)?",
+      "options": [
+        "A. Replaces the resource whenever a specified attribute of another resource or terraform_data changes.",
+        "B. Forces replacement once every 30 days.",
+        "C. Replaces the resource if CPU usage exceeds 80%.",
+        "D. Replaces the provider plugin binary."
+      ],
+      "answer": "A",
+      "explanation": "'replace_triggered_by = [aws_app_config.cfg.version]' forces the resource to be replaced whenever the referenced resource or attribute changes, eliminating the need for complex taint scripts.",
+      "recommended_exercise": "07-lifecycle-rules"
+    },
+    {
+      "id": "q6_07",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "What does a 'dynamic' block generate in Terraform HCL?",
+      "options": [
+        "A. Dynamic AWS Lambda functions.",
+        "B. Repeating nested configuration blocks (like ingress, egress, tag, or setting) inside a single top-level resource block.",
+        "C. Multiple top-level resource blocks.",
+        "D. Dynamic CLI environment variables."
+      ],
+      "answer": "B",
+      "explanation": "A 'dynamic' block generates repeated nested blocks inside a resource or data source block based on a collection (list or map), acting like an inner loop for nested block configuration.",
+      "recommended_exercise": "09-dynamic-blocks"
+    },
+    {
+      "id": "q6_08",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "Within a dynamic block named 'dynamic \"ingress\" { for_each = var.ports }', how do you access the current element's value if no 'iterator' is specified?",
+      "options": [
+        "A. each.value",
+        "B. ingress.value",
+        "C. this.value",
+        "D. item.value"
+      ],
+      "answer": "B",
+      "explanation": "By default, the iterator variable inside a dynamic block matches the label of the dynamic block itself. For 'dynamic \"ingress\"', the current object is accessed via 'ingress.value'.",
+      "recommended_exercise": "09-dynamic-blocks"
+    },
+    {
+      "id": "q6_09",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "You define: dynamic \"setting\" { for_each = var.settings iterator = item content { name = item.key ... } }. What did the 'iterator' argument do?",
+      "options": [
+        "A. Set the loop speed.",
+        "B. Customizes the name of the iterator variable used within the 'content' block to 'item' instead of defaulting to 'setting'.",
+        "C. Enables reverse iteration.",
+        "D. Skips the first element."
+      ],
+      "answer": "B",
+      "explanation": "The 'iterator' argument allows overriding the default iterator symbol (which would otherwise be 'setting') with a custom identifier (such as 'item'), which is especially helpful when nesting dynamic blocks.",
+      "recommended_exercise": "09-dynamic-blocks"
+    },
+    {
+      "id": "q6_10",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "Can dynamic blocks be used to generate top-level 'resource' or 'module' blocks?",
+      "options": [
+        "A. Yes, dynamic blocks can generate any block in HCL.",
+        "B. No, dynamic blocks can ONLY generate nested configuration blocks inside resources, data sources, providers, or provisioners. Top-level blocks use 'for_each'.",
+        "C. Yes, if prefixed with 'global'.",
+        "D. Yes, in Terraform Enterprise only."
+      ],
+      "answer": "B",
+      "explanation": "Dynamic blocks are strictly designed for repeating nested blocks within a resource/module/provider. To create multiple top-level resources or modules, use the 'for_each' or 'count' meta-arguments.",
+      "recommended_exercise": "09-dynamic-blocks"
+    },
+    {
+      "id": "q6_11",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "What is the danger of abusing dynamic blocks throughout your codebase?",
+      "options": [
+        "A. They make configuration harder to read, maintain, and debug, hiding declarative structure under programmatic loops.",
+        "B. They increase the cost of cloud resources.",
+        "C. They corrupt the state lock.",
+        "D. They bypass variable type validations."
+      ],
+      "answer": "A",
+      "explanation": "HashiCorp explicitly cautions against overusing dynamic blocks. Overuse turns clean, readable declarative HCL into complex imperative code that is difficult for team members to understand and review.",
+      "recommended_exercise": "09-dynamic-blocks"
+    },
+    {
+      "id": "q6_12",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "How can you conditionally generate a single nested block using a dynamic block?",
+      "options": [
+        "A. Pass a list of one item when enabled, or an empty list [] when disabled: for_each = var.enable_logging ? [1] : []",
+        "B. Use an if statement outside the resource.",
+        "C. Set condition = true inside the content block.",
+        "D. Dynamic blocks cannot be conditional."
+      ],
+      "answer": "A",
+      "explanation": "The canonical pattern to make a nested block conditional in HCL is: 'for_each = var.enable ? [1] : []'. If true, it iterates once; if false, it iterates zero times (no block rendered).",
+      "recommended_exercise": "09-dynamic-blocks"
+    },
+    {
+      "id": "q6_13",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "If Resource A has 'create_before_destroy = true', what must be true for any resource that Resource A depends on?",
+      "options": [
+        "A. They must also have 'create_before_destroy = true' (or must not require recreation), otherwise a dependency inversion error occurs.",
+        "B. They must be destroyed first.",
+        "C. They must use count.",
+        "D. They must be data sources."
+      ],
+      "answer": "A",
+      "explanation": "If Resource A has 'create_before_destroy = true', any upstream resource it depends on must also use 'create_before_destroy = true' if it gets replaced; otherwise Terraform detects an impossible cycle where A needs B before B can be destroyed.",
+      "recommended_exercise": "07-lifecycle-rules"
+    },
+    {
+      "id": "q6_14",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "In a resource block using 'count = 3', what expression gives the zero-based index of the current instance?",
+      "options": [
+        "A. count.id",
+        "B. count.index",
+        "C. this.index",
+        "D. count.number"
+      ],
+      "answer": "B",
+      "explanation": "'count.index' provides the distinct numeric index (0, 1, 2, ...) of each instance created by the 'count' meta-argument.",
+      "recommended_exercise": "06-count-and-foreach"
+    },
+    {
+      "id": "q6_15",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "In a resource block using 'for_each = var.services', how do you access the map key and map value of the current item?",
+      "options": [
+        "A. each.key and each.value",
+        "B. item.key and item.value",
+        "C. this.key and this.value",
+        "D. map.key and map.value"
+      ],
+      "answer": "A",
+      "explanation": "In a 'for_each' block, the object 'each' is available in scope, providing 'each.key' (the map key or set string) and 'each.value' (the map value or set string).",
+      "recommended_exercise": "06-count-and-foreach"
+    },
+    {
+      "id": "q6_16",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "What happens if you pass a list containing duplicate strings to 'for_each' without using 'toset()'?",
+      "options": [
+        "A. Terraform deduplicates them silently.",
+        "B. Terraform raises a type mismatch error because 'for_each' requires a map or a set of strings, not a list.",
+        "C. Terraform creates two identical resources.",
+        "D. The plan succeeds but apply fails."
+      ],
+      "answer": "B",
+      "explanation": "'for_each' only accepts maps or sets of strings. Passing a raw list(string) results in a validation error: 'Invalid for_each argument. The given \"for_each\" argument value is unsuitable: must be a map or set of strings'.",
+      "recommended_exercise": "06-count-and-foreach"
+    },
+    {
+      "id": "q6_17",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "You have 'resource \"aws_instance\" \"server\" { count = 3 }'. How do you reference the public IP addresses of all 3 instances as a list?",
+      "options": [
+        "A. aws_instance.server.public_ip",
+        "B. aws_instance.server[*].public_ip",
+        "C. aws_instance.server[all].public_ip",
+        "D. list(aws_instance.server.public_ip)"
+      ],
+      "answer": "B",
+      "explanation": "Using the splat operator '[*]', 'aws_instance.server[*].public_ip' evaluates to a list containing the 'public_ip' attribute from every instance.",
+      "recommended_exercise": "08-builtin-functions"
+    },
+    {
+      "id": "q6_18",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "You have 'resource \"aws_instance\" \"server\" { for_each = toset([\"a\", \"b\"]) }'. What is the correct expression to reference all private IPs as a list?",
+      "options": [
+        "A. [for s in aws_instance.server : s.private_ip]",
+        "B. aws_instance.server[*].private_ip",
+        "C. aws_instance.server.private_ip",
+        "D. aws_instance.server.all.private_ip"
+      ],
+      "answer": "A",
+      "explanation": "Because 'for_each' creates a map of resource instances (not a list), the standard splat operator '[*]' cannot be used directly. You use a 'for' expression: '[for s in aws_instance.server : s.private_ip]' or 'values(aws_instance.server)[*].private_ip'.",
+      "recommended_exercise": "06-count-and-foreach"
+    },
+    {
+      "id": "q6_19",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "Can you use both 'count' and 'for_each' inside the same resource block?",
+      "options": [
+        "A. Yes, to create a multi-dimensional matrix of resources.",
+        "B. No, 'count' and 'for_each' are mutually exclusive meta-arguments within a single resource block.",
+        "C. Yes, if count is less than 5.",
+        "D. Only in modules."
+      ],
+      "answer": "B",
+      "explanation": "'count' and 'for_each' cannot be used simultaneously within the same resource or module block. A block must use either count or for_each (or neither).",
+      "recommended_exercise": "06-count-and-foreach"
+    },
+    {
+      "id": "q6_20",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "What is the primary risk of using 'depends_on' excessively instead of implicit dependencies?",
+      "options": [
+        "A. It reduces the opportunity for Terraform to provision resources in parallel, needlessly slowing down planning and applies.",
+        "B. It encrypts the resource definitions.",
+        "C. It disables plan logs.",
+        "D. It corrupts state files."
+      ],
+      "answer": "A",
+      "explanation": "Terraform builds a DAG and parallelizes all independent operations. Excessive or premature 'depends_on' creates artificial serial bottlenecks, forcing resources to wait unnecessarily and increasing execution times.",
+      "recommended_exercise": "04-resource-dependencies"
+    },
+    {
+      "id": "q6_21",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "How do you specify that a resource should be provisioned only if var.create_resource is true?",
+      "options": [
+        "A. count = var.create_resource ? 1 : 0",
+        "B. if var.create_resource == true",
+        "C. enabled = var.create_resource",
+        "D. condition = var.create_resource"
+      ],
+      "answer": "A",
+      "explanation": "The standard ternary conditional pattern for conditional resources is 'count = var.create_resource ? 1 : 0'. If true, 1 instance is provisioned; if false, 0 instances are provisioned.",
+      "recommended_exercise": "06-count-and-foreach"
+    },
+    {
+      "id": "q6_22",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "You have a resource with 'lifecycle { prevent_destroy = true }'. Can you delete the entire resource block from your .tf file and run 'terraform apply'?",
+      "options": [
+        "A. Yes, removing the code disables prevent_destroy.",
+        "B. No, Terraform will still detect that applying the plan would destroy the resource recorded in state and will reject the plan with an error.",
+        "C. Yes, if you delete the provider.",
+        "D. Yes, if you pass -force."
+      ],
+      "answer": "B",
+      "explanation": "Because 'prevent_destroy = true' is recorded in the configuration/state rules, removing the block from code still results in a plan that would destroy the physical resource, triggering the error. You must first set 'prevent_destroy = false', apply, and then remove the block.",
+      "recommended_exercise": "07-lifecycle-rules"
+    },
+    {
+      "id": "q6_23",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "What does 'self' refer to in provisioner blocks or lifecycle postconditions?",
+      "options": [
+        "A. The root module.",
+        "B. The current resource instance being provisioned or evaluated.",
+        "C. The Terraform CLI binary.",
+        "D. The user's workstation."
+      ],
+      "answer": "B",
+      "explanation": "'self' is a special reference object available inside provisioner blocks and resource lifecycle postconditions representing the resource instance itself and its exported attributes.",
+      "recommended_exercise": "13-validations-and-conditions"
+    },
+    {
+      "id": "q6_24",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "Can data sources use the 'depends_on' meta-argument?",
+      "options": [
+        "A. No, depends_on is only for resources.",
+        "B. Yes, data sources support 'depends_on' to ensure they do not attempt to read data until a specified resource has finished provisioning.",
+        "C. Only if the data source is local.",
+        "D. Only in Terraform Enterprise."
+      ],
+      "answer": "B",
+      "explanation": "Data sources support 'depends_on'. This is crucial when a data source must read an attribute or file created by an upstream resource during the same apply.",
+      "recommended_exercise": "04-resource-dependencies"
+    },
+    {
+      "id": "q6_25",
+      "domain": "Domain 8: Read, Generate, and Modify Configuration",
+      "question": "You define: lifecycle { ignore_changes = [ami] } on an EC2 instance. The AMI is updated in HCL code to a new image. What does 'terraform plan' do?",
+      "options": [
+        "A. Terraform destroys and recreates the EC2 instance with the new AMI.",
+        "B. Terraform ignores the change to the AMI attribute and reports 'No changes'.",
+        "C. Terraform throws a validation error.",
+        "D. Terraform updates the tag only."
+      ],
+      "answer": "B",
+      "explanation": "Because 'ami' is listed in 'ignore_changes', Terraform disregards differences between the code and state for that attribute, avoiding the destructive replacement plan.",
+      "recommended_exercise": "07-lifecycle-rules"
+    }
+  ]
+}

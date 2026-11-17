@@ -1,0 +1,361 @@
+{
+  "exam_id": 4,
+  "title": "State Architecture, Backends & State Surgery",
+  "description": "In-depth testing on remote backends, state locking, state manipulation commands, and drift management.",
+  "domain_focus": "Domain 7",
+  "total_questions": 25,
+  "passing_percentage": 70,
+  "time_limit_minutes": 60,
+  "questions": [
+    {
+      "id": "q4_01",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "Why does Terraform store state? Which purpose is NOT handled by the state file?",
+      "options": [
+        "A. Mapping HCL configuration declarations to real-world cloud resource IDs.",
+        "B. Caching resource metadata and attributes for fast planning.",
+        "C. Tracking resource dependency order for accurate deletion plans.",
+        "D. Acting as a source code control system to replace Git."
+      ],
+      "answer": "D",
+      "explanation": "Terraform state maps HCL resources to real world API IDs, records cached attributes, and tracks dependencies. It does NOT replace version control systems (like Git).",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q4_02",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "If sensitive variables or passwords are used to configure resources, where are they stored in plaintext?",
+      "options": [
+        "A. They are never stored anywhere once apply finishes.",
+        "B. In the 'terraform.tfstate' file.",
+        "C. Only inside the cloud provider's API logs.",
+        "D. In '.terraform.lock.hcl'."
+      ],
+      "answer": "B",
+      "explanation": "Terraform state stores the full state of every managed resource, including attributes marked 'sensitive = true'. Therefore, anyone with read access to the state file can read secrets in plaintext. Securing the backend is critical.",
+      "recommended_exercise": "20-secrets-and-sensitive-data"
+    },
+    {
+      "id": "q4_03",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "What is partial backend configuration?",
+      "options": [
+        "A. A backend where only some resources are stored in state.",
+        "B. Omitting sensitive parameters (like credentials, bucket names, regions) from the HCL 'backend' block and providing them at runtime via '-backend-config' CLI flags or files.",
+        "C. A backend that syncs once every 24 hours.",
+        "D. Storing state partially in Git and partially in AWS."
+      ],
+      "answer": "B",
+      "explanation": "Partial configuration allows you to leave backend configuration settings empty or omitted in HCL code to prevent hardcoding environment-specific or secret parameters, supplying them during 'terraform init -backend-config=...' instead.",
+      "recommended_exercise": "17-remote-backends-and-locking"
+    },
+    {
+      "id": "q4_04",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "You execute 'terraform state mv aws_instance.old_web aws_instance.new_web'. What happens to the running EC2 instance?",
+      "options": [
+        "A. AWS restarts the instance with the new tag.",
+        "B. The instance is stopped, renamed, and started.",
+        "C. The instance continues running untouched; only its tracking address in the state file is renamed.",
+        "D. The instance is deleted and recreated."
+      ],
+      "answer": "C",
+      "explanation": "'terraform state mv' operates purely on the state file's internal mapping index. It does not contact the cloud provider API and does not alter the physical resource.",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q4_05",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "How can Configuration B read outputs exported by Configuration A without directly sharing configuration files?",
+      "options": [
+        "A. Use the 'data \"terraform_remote_state\"' data source to read Configuration A's state file.",
+        "B. Use Git submodules.",
+        "C. Copy paste outputs.tf from Configuration A.",
+        "D. Configuration files cannot read outputs from another state."
+      ],
+      "answer": "A",
+      "explanation": "'data \"terraform_remote_state\"' allows a Terraform workspace to access the root module output values of another separate Terraform state file, establishing read-only decoupled integration.",
+      "recommended_exercise": "17-remote-backends-and-locking"
+    },
+    {
+      "id": "q4_06",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "Where does Terraform store workspace state files when using the default 'local' backend?",
+      "options": [
+        "A. In the root directory named 'terraform.tfstate.<workspace_name>'",
+        "B. In a subfolder named 'terraform.tfstate.d/<workspace_name>/terraform.tfstate'",
+        "C. In '~/.terraform/workspaces/'",
+        "D. In the .git folder"
+      ],
+      "answer": "B",
+      "explanation": "For the local backend, non-default workspaces store their state inside the directory 'terraform.tfstate.d/<workspace_name>/terraform.tfstate'. The default workspace is stored at './terraform.tfstate'.",
+      "recommended_exercise": "11-workspaces"
+    },
+    {
+      "id": "q4_07",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "When using the AWS S3 backend, how are workspaces partitioned inside the S3 bucket?",
+      "options": [
+        "A. A separate AWS account is required for each workspace.",
+        "B. Under the prefix 'env:/<workspace_name>/<key>'.",
+        "C. In separate S3 buckets named <bucket>-<workspace>.",
+        "D. S3 backend does not support workspaces."
+      ],
+      "answer": "B",
+      "explanation": "When using remote backends like S3, non-default workspaces are automatically saved under an 'env:/' prefix inside the bucket, e.g. 's3://mybucket/env:/prod/terraform.tfstate'.",
+      "recommended_exercise": "11-workspaces"
+    },
+    {
+      "id": "q4_08",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "When is using Terraform Workspaces NOT recommended according to HashiCorp best practices?",
+      "options": [
+        "A. For testing feature branches of the same infrastructure.",
+        "B. For separating distinct deployment environments (dev, staging, prod) that require different credentials, access policies, regions, or backends.",
+        "C. For fast ephemeral test environments.",
+        "D. When using local state."
+      ],
+      "answer": "B",
+      "explanation": "HashiCorp guidelines recommend distinct directory/backend configurations (not workspaces) for production vs staging/dev environments because they share the same backend credentials and access boundaries, increasing blast radius risk.",
+      "recommended_exercise": "11-workspaces"
+    },
+    {
+      "id": "q4_09",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "What is 'state drift' in Infrastructure as Code?",
+      "options": [
+        "A. When the Terraform CLI is upgraded to a newer binary.",
+        "B. The divergence between the real-world infrastructure attributes and the records stored in the Terraform state file (e.g. from manual changes in the web console).",
+        "C. Moving state files between local and remote backends.",
+        "D. When Git branches have conflicting merge conflicts."
+      ],
+      "answer": "B",
+      "explanation": "State drift occurs when real infrastructure changes outside of Terraform's knowledge (such as manual edits in the cloud console or automated autoscaling), causing the actual state to differ from the recorded state.",
+      "recommended_exercise": "07-lifecycle-rules"
+    },
+    {
+      "id": "q4_10",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "What happens when you run 'terraform state list'?",
+      "options": [
+        "A. Displays all Terraform configurations in your organization.",
+        "B. Lists all resource addresses currently recorded in the active state file.",
+        "C. Displays all available provider versions in the registry.",
+        "D. Displays the history of all changes ever applied."
+      ],
+      "answer": "B",
+      "explanation": "'terraform state list' outputs a list of all resource addresses currently tracked in the state file (e.g. 'aws_instance.web', 'module.vpc.aws_subnet.public[0]').",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q4_11",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "A team member wants to push a modified state file back to the remote backend after manual inspection. Which command does this?",
+      "options": [
+        "A. terraform state upload",
+        "B. terraform state push",
+        "C. terraform apply -state",
+        "D. terraform push"
+      ],
+      "answer": "B",
+      "explanation": "'terraform state push' writes a state file from local disk to the remote backend. Because this can overwrite team state and cause corruption, it should be used with extreme caution.",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q4_12",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "Which backend feature is supported natively by Terraform Cloud / HCP Terraform without requiring additional cloud services?",
+      "options": [
+        "A. Automated state locking and remote execution.",
+        "B. Manual FTP state synchronization.",
+        "C. Unencrypted plain-text state logging.",
+        "D. Hardcoded IP whitelisting only."
+      ],
+      "answer": "A",
+      "explanation": "Terraform Cloud provides managed remote state storage, built-in non-blocking and blocking state locks, and optional remote execution (running plan/apply on HashiCorp agents) out of the box.",
+      "recommended_exercise": "21-capstone-production-system"
+    },
+    {
+      "id": "q4_13",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "How can you disable state locking during an emergency 'terraform plan' execution?",
+      "options": [
+        "A. terraform plan -no-lock",
+        "B. terraform plan -lock=false",
+        "C. terraform plan --bypass",
+        "D. terraform plan -force"
+      ],
+      "answer": "B",
+      "explanation": "The '-lock=false' flag disables state locking for the current CLI execution. It is dangerous if others are writing concurrently, but helpful for read-only inspection if a lock is stuck.",
+      "recommended_exercise": "17-remote-backends-and-locking"
+    },
+    {
+      "id": "q4_14",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "You need to wait up to 3 minutes for an active state lock to be released before timing out. Which flag achieves this?",
+      "options": [
+        "A. -wait=180s",
+        "B. -lock-timeout=180s",
+        "C. -timeout=3m",
+        "D. -retry=180"
+      ],
+      "answer": "B",
+      "explanation": "'-lock-timeout=180s' instructs Terraform to keep retrying to acquire the state lock for up to 180 seconds before failing with a lock acquisition error.",
+      "recommended_exercise": "17-remote-backends-and-locking"
+    },
+    {
+      "id": "q4_15",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "What is the consequence of deleting the 'terraform.tfstate' file from a project that already has active infrastructure running in the cloud?",
+      "options": [
+        "A. The cloud provider automatically terminates all the active resources.",
+        "B. Terraform loses all tracking of the resources; running 'terraform apply' will attempt to recreate them, causing conflict errors or duplicate infrastructure.",
+        "C. Terraform automatically rebuilds the state file by scanning your AWS account.",
+        "D. Nothing; Terraform does not require state."
+      ],
+      "answer": "B",
+      "explanation": "If state is lost, Terraform does not know those resources exist. On the next apply, it attempts to recreate them, leading to collision errors (e.g. S3 bucket already exists) or costly duplicate infrastructure.",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q4_16",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "Where does Terraform keep backup copies of the local state file when changes are applied?",
+      "options": [
+        "A. In the cloud console.",
+        "B. In 'terraform.tfstate.backup'.",
+        "C. Inside '.terraform/backups/'.",
+        "D. In the Git reflog."
+      ],
+      "answer": "B",
+      "explanation": "When using the local backend, Terraform writes the previous state to 'terraform.tfstate.backup' before saving the newly applied state, enabling manual disaster recovery if needed.",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q4_17",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "Can a single Terraform configuration block declare multiple 'backend' blocks simultaneously?",
+      "options": [
+        "A. Yes, for redundant state mirroring.",
+        "B. No, a configuration can only define exactly one backend block.",
+        "C. Yes, one local and one remote.",
+        "D. Yes, up to three backends."
+      ],
+      "answer": "B",
+      "explanation": "Terraform allows only one backend block per configuration. Redundant multi-backend state writes are not supported by the core engine.",
+      "recommended_exercise": "17-remote-backends-and-locking"
+    },
+    {
+      "id": "q4_18",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "You want to refactor resource 'aws_security_group.sg' into a child module 'module.network.aws_security_group.sg'. Which CLI command moves the state address without recreation?",
+      "options": [
+        "A. terraform state cp aws_security_group.sg module.network.aws_security_group.sg",
+        "B. terraform state mv aws_security_group.sg module.network.aws_security_group.sg",
+        "C. terraform module migrate",
+        "D. terraform refactor"
+      ],
+      "answer": "B",
+      "explanation": "'terraform state mv <SOURCE> <DEST>' moves the state tracking record to the new address inside the child module.",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q4_19",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "How does Terraform detect if another user is actively modifying a remote S3 backend state?",
+      "options": [
+        "A. S3 bucket versioning timestamps.",
+        "B. By checking for a LockID item in the associated DynamoDB table.",
+        "C. By pinging the user's IP address.",
+        "D. Through IAM role lease locks."
+      ],
+      "answer": "B",
+      "explanation": "The AWS S3 backend integrates with DynamoDB for state locking. Before any write, Terraform writes an item with a unique 'LockID' (containing md5, operation, user, created timestamp).",
+      "recommended_exercise": "17-remote-backends-and-locking"
+    },
+    {
+      "id": "q4_20",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "What is the recommended best practice for managing blast radius in enterprise Terraform architectures?",
+      "options": [
+        "A. Place the entire enterprise infrastructure into a single massive main.tf with 1,000 resources.",
+        "B. Break infrastructure into smaller, decoupled state configurations (e.g. networking, databases, applications) with independent state files.",
+        "C. Never use state files.",
+        "D. Store state in public GitHub repos."
+      ],
+      "answer": "B",
+      "explanation": "Smaller state files limit the blast radius: a mistake or failed apply in an application deployment cannot inadvertently corrupt or destroy core network or database state.",
+      "recommended_exercise": "21-capstone-production-system"
+    },
+    {
+      "id": "q4_21",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "What is the purpose of 'terraform state replace-provider'?",
+      "options": [
+        "A. Upgrades a provider to the newest version.",
+        "B. Changes the provider source for existing resources in state (e.g. migrating from hashicorp/aws to an internal fork or renamed provider).",
+        "C. Uninstalls unused provider binaries.",
+        "D. Generates mock provider test fixtures."
+      ],
+      "answer": "B",
+      "explanation": "'terraform state replace-provider <FROM_PROVIDER> <TO_PROVIDER>' updates the provider FQCN for all matching resources in state without requiring manual JSON editing.",
+      "recommended_exercise": "12-state-manipulation"
+    },
+    {
+      "id": "q4_22",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "Does 'terraform plan' require read access to the state file?",
+      "options": [
+        "A. No, plan only inspects HCL files.",
+        "B. Yes, plan must read existing state to determine what changes are required to reach the desired configuration.",
+        "C. Only if resources use provisioners.",
+        "D. Only when using Terraform Cloud."
+      ],
+      "answer": "B",
+      "explanation": "Terraform plan requires read access to state because the execution plan is calculated by diffing the desired configuration against the current state.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q4_23",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "What is the default state storage backend when no 'backend' block is declared?",
+      "options": [
+        "A. cloud",
+        "B. local",
+        "C. memory",
+        "D. consul"
+      ],
+      "answer": "B",
+      "explanation": "If no backend is declared, Terraform defaults to the 'local' backend, creating and reading 'terraform.tfstate' on the local filesystem.",
+      "recommended_exercise": "01-first-resource"
+    },
+    {
+      "id": "q4_24",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "Why is committing 'terraform.tfstate' directly to a public Git repository a major security violation?",
+      "options": [
+        "A. Git cannot parse JSON files.",
+        "B. State files contain unencrypted sensitive attributes, passwords, and private keys, making them accessible to anyone with repository access.",
+        "C. Git locks prevent Terraform from applying changes.",
+        "D. The file size exceeds Git limits."
+      ],
+      "answer": "B",
+      "explanation": "Terraform state stores raw resource attributes in unencrypted JSON, which frequently contains initial passwords, API tokens, TLS keys, and sensitive database strings.",
+      "recommended_exercise": "20-secrets-and-sensitive-data"
+    },
+    {
+      "id": "q4_25",
+      "domain": "Domain 7: Implement and Maintain State",
+      "question": "What happens if two operators attempt to run 'terraform apply' simultaneously against a backend with state locking enabled?",
+      "options": [
+        "A. Both executions merge their changes simultaneously.",
+        "B. The first operator acquires the lock; the second operator's execution fails immediately with an error (or waits if lock-timeout is set).",
+        "C. The second operator cancels the first operator's run.",
+        "D. Both runs are aborted."
+      ],
+      "answer": "B",
+      "explanation": "State locking ensures mutual exclusion. The second process detects the existing lock and terminates with an error (e.g. 'Error acquiring the state lock'), protecting state consistency.",
+      "recommended_exercise": "17-remote-backends-and-locking"
+    }
+  ]
+}

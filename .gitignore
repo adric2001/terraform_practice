@@ -37,3 +37,4 @@ terraform.rc
 .DS_Store
 __pycache__/
 .progress.json
+portal/config.js

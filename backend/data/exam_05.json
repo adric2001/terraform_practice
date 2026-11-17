@@ -1,0 +1,361 @@
+{
+  "exam_id": 5,
+  "title": "Modules, Registries & Architecture",
+  "description": "Complete examination on child modules, encapsulation, registries, sources, versioning, and architectural patterns.",
+  "domain_focus": "Domain 5",
+  "total_questions": 25,
+  "passing_percentage": 70,
+  "time_limit_minutes": 60,
+  "questions": [
+    {
+      "id": "q5_01",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What constitutes a 'Root Module' in Terraform?",
+      "options": [
+        "A. A special module downloaded from the HashiCorp private registry.",
+        "B. The working directory containing the .tf files where the Terraform CLI is executed.",
+        "C. The module located at '/root/' on Linux.",
+        "D. A module that does not declare any input variables."
+      ],
+      "answer": "B",
+      "explanation": "Every Terraform configuration has at least one module known as the root module, which consists of the resources and files in the directory where 'terraform' CLI commands are run.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_02",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What is the standard naming convention for a repository to be published to the public Terraform Registry?",
+      "options": [
+        "A. terraform-<PROVIDER>-<NAME>",
+        "B. module-<NAME>-<PROVIDER>",
+        "C. tf-module-<NAME>",
+        "D. hashicorp-<NAME>"
+      ],
+      "answer": "A",
+      "explanation": "The public Terraform Registry requires repository names to follow the exact format 'terraform-<PROVIDER>-<NAME>', such as 'terraform-aws-vpc'.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_03",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "You want to call a module from a Git repository and pin it to a specific tag 'v2.1.0'. What is the correct syntax for the 'source' argument?",
+      "options": [
+        "A. source = \"git::https://github.com/org/repo.git?ref=v2.1.0\"",
+        "B. source = \"git::https://github.com/org/repo.git#v2.1.0\"",
+        "C. source = \"https://github.com/org/repo.git/tags/v2.1.0\"",
+        "D. source = \"git::https://github.com/org/repo.git@v2.1.0\""
+      ],
+      "answer": "A",
+      "explanation": "For Git repositories, the '?ref=' query parameter specifies the branch, tag, or commit hash to check out: 'git::https://github.com/org/repo.git?ref=v2.1.0'.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_04",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "In a monorepo containing multiple modules in subdirectories, what syntax points to a specific subdirectory within a Git source?",
+      "options": [
+        "A. git::https://example.com/repo.git//modules/vpc",
+        "B. git::https://example.com/repo.git/modules/vpc",
+        "C. git::https://example.com/repo.git#subdir=modules/vpc",
+        "D. git::https://example.com/repo.git:modules/vpc"
+      ],
+      "answer": "A",
+      "explanation": "Terraform uses a special double-slash '//' separator to indicate a subdirectory inside a Git repository clone: 'git::https://example.com/repo.git//modules/vpc'.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_05",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "Why is it an anti-pattern to declare provider blocks inside reusable shared child modules?",
+      "options": [
+        "A. Providers inside child modules increase network bandwidth.",
+        "B. Child modules should inherit providers from the root module; declaring providers inside child modules makes them difficult to reuse, complicates provider aliasing, and breaks destruction order.",
+        "C. Terraform CLI throws a compilation error if any provider is in a child module.",
+        "D. Providers can only be downloaded in the root module directory."
+      ],
+      "answer": "B",
+      "explanation": "Reusable child modules should only declare 'required_providers' (specifying version and source constraints). Declaring concrete 'provider' blocks with credentials or regions inside child modules couples them tightly and prevents clean provider inheritance.",
+      "recommended_exercise": "18-multi-provider-aliasing"
+    },
+    {
+      "id": "q5_06",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "How do you pass an aliased provider 'aws.west' from the root module to a child module expecting provider 'aws'?",
+      "options": [
+        "A. providers = { aws = aws.west }",
+        "B. provider = aws.west",
+        "C. alias = aws.west",
+        "D. aws_provider = aws.west"
+      ],
+      "answer": "A",
+      "explanation": "Child modules accept provider configurations via the 'providers' map argument: 'module \"app\" { source = \"...\" providers = { aws = aws.west } }'.",
+      "recommended_exercise": "18-multi-provider-aliasing"
+    },
+    {
+      "id": "q5_07",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "Can you use 'for_each' on a 'module' block in modern Terraform?",
+      "options": [
+        "A. No, for_each is only allowed on resource blocks.",
+        "B. Yes, for_each can instantiate multiple instances of a module based on a map or set.",
+        "C. Yes, but only with local modules, not registry modules.",
+        "D. Yes, but only in Terraform Enterprise."
+      ],
+      "answer": "B",
+      "explanation": "Terraform 0.13+ introduced support for 'for_each' and 'count' on 'module' blocks. Each module instance is keyed by the map key (e.g. 'module.service[\"auth\"]').",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_08",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What is the purpose of the 'required_providers' block inside a child module?",
+      "options": [
+        "A. It specifies credentials for the cloud provider.",
+        "B. It defines the source and version requirements for provider plugins that the child module requires to operate properly.",
+        "C. It downloads providers immediately without needing 'terraform init'.",
+        "D. It replaces the root module's provider configuration."
+      ],
+      "answer": "B",
+      "explanation": "A child module's 'required_providers' block specifies the provider local name, FQCN source (e.g. 'hashicorp/aws'), and version constraints required by the module.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_09",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What is the effect of setting 'depends_on = [module.database]' inside a 'module.backend' block?",
+      "options": [
+        "A. It compiles both modules into a single binary.",
+        "B. It ensures that all resources inside module.database are completely provisioned before any resource inside module.backend begins creation.",
+        "C. It shares variables automatically between both modules.",
+        "D. It merges the state files of both modules."
+      ],
+      "answer": "B",
+      "explanation": "Setting 'depends_on' on a module block creates an explicit module-to-module dependency. All resources inside the upstream module must complete provisioning before any resource in the downstream module begins.",
+      "recommended_exercise": "04-resource-dependencies"
+    },
+    {
+      "id": "q5_10",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "Which files are considered standard conventions for any well-structured Terraform module?",
+      "options": [
+        "A. main.tf, variables.tf, outputs.tf, README.md",
+        "B. index.js, package.json, docker-compose.yml",
+        "C. terraform.exe, config.yaml, setup.sh",
+        "D. app.tf, run.tf, end.tf"
+      ],
+      "answer": "A",
+      "explanation": "HashiCorp's official standard module structure recommends: 'main.tf' (primary resources), 'variables.tf' (input variable declarations), 'outputs.tf' (exported outputs), and 'README.md' (documentation).",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_11",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "How are resources inside a child module addressed in state?",
+      "options": [
+        "A. module.<MODULE_NAME>.<RESOURCE_TYPE>.<RESOURCE_NAME>",
+        "B. <RESOURCE_TYPE>.<RESOURCE_NAME>",
+        "C. <MODULE_NAME>#<RESOURCE_NAME>",
+        "D. child.<MODULE_NAME>.<RESOURCE_NAME>"
+      ],
+      "answer": "A",
+      "explanation": "Resources managed within a child module are prefixed with 'module.<MODULE_NAME>.', e.g. 'module.vpc.aws_subnet.public_1'. If nested, they chain: 'module.outer.module.inner.resource_type.name'.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_12",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What happens if a child module has an input variable with no default value and the root module does not provide a value when calling it?",
+      "options": [
+        "A. The variable defaults to null.",
+        "B. Terraform halts during plan/validation with an error stating that a required argument is missing.",
+        "C. Terraform prompts interactively on the command line for the child module variable.",
+        "D. The resource inside the module is skipped."
+      ],
+      "answer": "B",
+      "explanation": "If a child module variable does not specify a 'default' attribute, it is a required input. Omitting it when calling the module results in an immediate validation error during plan.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_13",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "You want to download and install new versions of Git-based child modules without re-initializing the backend. Which command is quickest?",
+      "options": [
+        "A. terraform get -update",
+        "B. terraform sync",
+        "C. terraform pull",
+        "D. git pull"
+      ],
+      "answer": "A",
+      "explanation": "'terraform get -update' downloads and updates all referenced child modules according to their source settings without running full backend configuration.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_14",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What is the three-part source identifier format for a module hosted on the official public Terraform Registry?",
+      "options": [
+        "A. <NAMESPACE>/<NAME>/<PROVIDER>",
+        "B. <NAME>/<VERSION>/<REGION>",
+        "C. <AUTHOR>/<MODULE>",
+        "D. <REGISTRY>/<PROJECT>/<RESOURCE>"
+      ],
+      "answer": "A",
+      "explanation": "Modules on the public registry use '<NAMESPACE>/<NAME>/<PROVIDER>', e.g. 'terraform-aws-modules/vpc/aws'.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_15",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "How does Terraform treat an internal resource declared inside a child module that is NOT defined in outputs.tf?",
+      "options": [
+        "A. The resource is public and accessible anywhere in root.",
+        "B. The resource is encapsulated (private) within the child module and cannot be accessed by the calling module.",
+        "C. The resource is deleted during apply.",
+        "D. The resource cannot be provisioned."
+      ],
+      "answer": "B",
+      "explanation": "Encapsulation is a core module principle: resources inside a child module are completely private to that module. The only way the calling root module can access any value is if the child module explicitly exports it via an 'output' block.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_16",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What happens if you run 'terraform apply' on a configuration where a child module source path does not exist?",
+      "options": [
+        "A. Terraform skips that module.",
+        "B. 'terraform init' will fail during the module installation phase with a missing source error.",
+        "C. Terraform builds a blank placeholder module.",
+        "D. Terraform searches GitHub for a matching name."
+      ],
+      "answer": "B",
+      "explanation": "Module installation occurs during 'terraform init'. If a module source path cannot be resolved or found on disk/remotely, initialization terminates with a fatal error.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_17",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "Can child modules access local values ('locals') defined in the root module?",
+      "options": [
+        "A. Yes, all locals are globally scoped across all modules.",
+        "B. No, locals are scoped strictly to the module in which they are declared; they must be passed explicitly as variable inputs.",
+        "C. Yes, if referenced as root.local.<NAME>.",
+        "D. Only if defined in a file named global.tf."
+      ],
+      "answer": "B",
+      "explanation": "Locals have strictly local module scope. They are not inherited by child modules. To share a local value with a child module, pass it explicitly as an input variable argument.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_18",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "Which of the following source strings represents a module hosted on a private Terraform Cloud / Enterprise registry?",
+      "options": [
+        "A. app.terraform.io/my-org/vpc/aws",
+        "B. registry://my-org-vpc-aws",
+        "C. terraform-cloud::vpc/aws",
+        "D. private.registry/vpc"
+      ],
+      "answer": "A",
+      "explanation": "Modules in private registries (such as Terraform Cloud) include the registry hostname as the first component: '<HOSTNAME>/<ORGANIZATION>/<NAME>/<PROVIDER>'.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_19",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What is the recommended practice when calling registry modules in production configurations?",
+      "options": [
+        "A. Omit the version argument so you always automatically pull the latest untested code.",
+        "B. Always pin the module to an exact or constrained semantic version (e.g. version = \"~> 5.1.0\").",
+        "C. Copy the entire registry code manually into your root main.tf.",
+        "D. Pin to version = \"latest\"."
+      ],
+      "answer": "B",
+      "explanation": "Always pin module versions in production. If you omit the version, 'terraform init' downloads the newest release, which may introduce breaking changes unexpectedly.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_20",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What is an 'embedded module' or 'submodule'?",
+      "options": [
+        "A. A module embedded inside a compiled Go binary.",
+        "B. A child module contained within a subfolder of another parent module (often located in a 'modules/' subdirectory).",
+        "C. A module that can only run in Docker.",
+        "D. A deprecated feature in Terraform 1.0."
+      ],
+      "answer": "B",
+      "explanation": "A submodule is a child module located within a subfolder of a larger parent repository (commonly in a 'modules/' directory), providing optional specialized capabilities (e.g. 'terraform-aws-vpc/modules/vpc-endpoints').",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_21",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "Can a child module declare outputs without any descriptions?",
+      "options": [
+        "A. Yes, but providing a description is considered an industry best practice for documentation.",
+        "B. No, Terraform raises an error if an output lacks a description.",
+        "C. Only if the output is sensitive.",
+        "D. Only in root modules."
+      ],
+      "answer": "A",
+      "explanation": "While 'description' is optional in HCL syntax, documenting outputs is strongly recommended because registry documentation generators (like terraform-docs) use them to create module documentation.",
+      "recommended_exercise": "02-variables-and-outputs"
+    },
+    {
+      "id": "q5_22",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "You have a module call: module \"cluster\" { source = \"...\" count = 3 }. How do you access the 'endpoint' output of the second instance?",
+      "options": [
+        "A. module.cluster[1].endpoint",
+        "B. module.cluster.endpoint[1]",
+        "C. module.cluster.1.endpoint",
+        "D. module[1].cluster.endpoint"
+      ],
+      "answer": "A",
+      "explanation": "When 'count' is applied to a module, the module instances are indexed like a list: 'module.<NAME>[<INDEX>].<OUTPUT>'. The second instance is index [1]: 'module.cluster[1].endpoint'.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_23",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What happens if two child modules create a resource with the same local name, for example: resource \"aws_s3_bucket\" \"logs\" inside module A and module B?",
+      "options": [
+        "A. Terraform raises a duplicate resource declaration error.",
+        "B. It is completely valid because resource names are scoped to their respective modules: module.a.aws_s3_bucket.logs vs module.b.aws_s3_bucket.logs.",
+        "C. The second module overwrites the first.",
+        "D. S3 buckets cannot have the same resource name."
+      ],
+      "answer": "B",
+      "explanation": "Resource names are namespaced by their module path. Two different modules can each declare an 'aws_s3_bucket.logs' without collision, provided the physical cloud bucket names differ.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_24",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "What is the purpose of the 'terraform-docs' utility commonly used in module workflows?",
+      "options": [
+        "A. It compiles HCL code into PDF manuals.",
+        "B. It inspects a module's inputs, outputs, providers, and requirements, and automatically generates formatted Markdown documentation tables.",
+        "C. It connects to HashiCorp support.",
+        "D. It generates Terraform Cloud billing statements."
+      ],
+      "answer": "B",
+      "explanation": "'terraform-docs' is a widely used DevOps tool that reads Terraform modules and automatically generates comprehensive README markdown tables documenting inputs, outputs, requirements, and resources.",
+      "recommended_exercise": "10-child-modules"
+    },
+    {
+      "id": "q5_25",
+      "domain": "Domain 5: Interact with Terraform Modules",
+      "question": "Which of the following is an architectural anti-pattern when designing reusable Terraform modules?",
+      "options": [
+        "A. Making modules composable and focused on a single logical responsibility (e.g. VPC module, Database module).",
+        "B. Creating a monolithic 'god module' that bundles VPC, Kubernetes, Databases, DNS, and Alerting into one giant un-configurable configuration.",
+        "C. Exposing key resource IDs via outputs.",
+        "D. Declaring type constraints on all input variables."
+      ],
+      "answer": "B",
+      "explanation": "Monolithic 'kitchen sink' modules that try to provision everything are inflexible, difficult to test, slow to plan, and create high blast-radius risks. Clean, composable, single-purpose modules are the gold standard.",
+      "recommended_exercise": "21-capstone-production-system"
+    }
+  ]
+}
