@@ -1,11 +1,14 @@
 /**
- * Terraform Associate (004) Cloud Readiness Portal - Client Engine
+ * Terraform Associate (004) Cloud Readiness Portal - 2-Week Pass Engine
  * Features:
- * - AWS Cognito Authentication (Sign In, Sign Up, Email OTP Verification)
- * - Cloud Persistence via API Gateway + DynamoDB (/api/sessions, /api/profile)
- * - Automated Weak Area Detection (Focusing on Domain 4 & Domain 8)
- * - Dynamic Custom Weak-Area Exam Generator
- * - Complete Offline / Local Fallback Mode
+ * - 100% Clean Slate: Zero mock/fake baseline data
+ * - AWS Cognito Authentication & DynamoDB Sync
+ * - 14-Day Exam Acceleration Roadmap
+ * - Interactive 50 High-Yield Flashcard Trainer
+ * - 004 Exam Cheat Sheet & Top Traps Drawer
+ * - 60-Minute / 57-Question Timed Mock with Question Navigator Grid & Flagging
+ * - Starred Questions Bookmarking System
+ * - 5-Point Exam Readiness Checklist
  */
 
 (function() {
@@ -22,16 +25,24 @@
   let allQuestions = [];
   let userProgress = {
     history: [],
-    questionStats: {}, // q_id -> { attempts, correct, lastWrong }
+    questionStats: {}, // q_id -> { attempts, correct }
     domainStats: {},   // domain -> { attempts, correct }
-    missedQuestions: []
+    missedQuestions: [],
+    starredQuestions: []
   };
 
   let activeExam = null;
   let activeExamIndex = 0;
-  let currentAnswers = []; // array of { question_id, domain, selected, is_correct, time_spent }
+  let currentAnswers = []; // array of { question_id, domain, selected, is_correct, time_spent, flagged }
+  let isTimedExam = false;
+  let examTimerInterval = null;
+  let examSecondsRemaining = 3600; // 60 mins
 
-  // DOM Elements
+  // Flashcards State
+  let currentCardIndex = 0;
+  let activeCards = [];
+
+  // DOM Elements - Navigation & Auth
   const openAuthBtn = document.getElementById("openAuthBtn");
   const authModal = document.getElementById("authModal");
   const closeAuthModal = document.getElementById("closeAuthModal");
@@ -47,6 +58,7 @@
   const userEmailBadge = document.getElementById("userEmailBadge");
   const signOutBtn = document.getElementById("signOutBtn");
 
+  // Readiness Ribbon
   const readinessDial = document.getElementById("readinessDial");
   const readinessStatus = document.getElementById("readinessStatus");
   const readinessAdvice = document.getElementById("readinessAdvice");
@@ -54,11 +66,23 @@
   const accuracyStat = document.getElementById("accuracyStat");
   const syncStat = document.getElementById("syncStat");
 
+  // Welcome & Weak Areas
+  const welcomeCard = document.getElementById("welcomeCard");
+  const startDiagnosticBtn = document.getElementById("startDiagnosticBtn");
   const weakAreasBanner = document.getElementById("weakAreasBanner");
   const weakPillsContainer = document.getElementById("weakPillsContainer");
   const drillWeakBtn = document.getElementById("drillWeakBtn");
   const recommendedLabsText = document.getElementById("recommendedLabsText");
 
+  // Checklist
+  const checklistScore = document.getElementById("checklistScore");
+  const check1 = document.getElementById("check1");
+  const check2 = document.getElementById("check2");
+  const check3 = document.getElementById("check3");
+  const check4 = document.getElementById("check4");
+  const check5 = document.getElementById("check5");
+
+  // Views & Action Cards
   const dashboardView = document.getElementById("dashboard-view");
   const examView = document.getElementById("exam-view");
   const scorecardView = document.getElementById("scorecard-view");
@@ -67,11 +91,19 @@
   const startSelectedExamBtn = document.getElementById("startSelectedExamBtn");
   const start57MockBtn = document.getElementById("start57MockBtn");
   const startMissedBtn = document.getElementById("startMissedBtn");
+  const startStarredBtn = document.getElementById("startStarredBtn");
+  const cardLaunchBtn = document.getElementById("cardLaunchBtn");
+  const resetAllDataBtn = document.getElementById("resetAllDataBtn");
 
+  // Exam Active Controls
   const activeExamTitle = document.getElementById("activeExamTitle");
   const currentQNum = document.getElementById("currentQNum");
   const totalQNum = document.getElementById("totalQNum");
   const runningScore = document.getElementById("runningScore");
+  const examTimerContainer = document.getElementById("examTimerContainer");
+  const examTimer = document.getElementById("examTimer");
+  const starQBtn = document.getElementById("starQBtn");
+  const flagQBtn = document.getElementById("flagQBtn");
   const qDomain = document.getElementById("qDomain");
   const qText = document.getElementById("qText");
   const optionsContainer = document.getElementById("optionsContainer");
@@ -83,13 +115,46 @@
   const nextQBtn = document.getElementById("nextQBtn");
   const submitExamBtn = document.getElementById("submitExamBtn");
   const quitExamBtn = document.getElementById("quitExamBtn");
+  const openNavGridBtn = document.getElementById("openNavGridBtn");
 
+  // Scorecard View
   const scorecardDial = document.getElementById("scorecardDial");
   const scorecardVerdict = document.getElementById("scorecardVerdict");
   const scorecardSummary = document.getElementById("scorecardSummary");
   const domainBreakdownTbody = document.getElementById("domainBreakdownTbody");
   const scorecardReturnBtn = document.getElementById("scorecardReturnBtn");
   const scorecardDrillBtn = document.getElementById("scorecardDrillBtn");
+
+  // Modals
+  const openRoadmapBtn = document.getElementById("openRoadmapBtn");
+  const roadmapModal = document.getElementById("roadmapModal");
+  const closeRoadmapModal = document.getElementById("closeRoadmapModal");
+  const closeRoadmapBottomBtn = document.getElementById("closeRoadmapBottomBtn");
+
+  const openFlashcardsBtn = document.getElementById("openFlashcardsBtn");
+  const flashcardModal = document.getElementById("flashcardModal");
+  const closeFlashcardModal = document.getElementById("closeFlashcardModal");
+  const flashcardWrapper = document.getElementById("flashcardWrapper");
+  const flashcardInner = document.getElementById("flashcardInner");
+  const cardNum = document.getElementById("cardNum");
+  const cardTotal = document.getElementById("cardTotal");
+  const cardCategoryFront = document.getElementById("cardCategoryFront");
+  const cardQuestionText = document.getElementById("cardQuestionText");
+  const cardCategoryBack = document.getElementById("cardCategoryBack");
+  const cardAnswerText = document.getElementById("cardAnswerText");
+  const prevCardBtn = document.getElementById("prevCardBtn");
+  const nextCardBtn = document.getElementById("nextCardBtn");
+  const shuffleCardsBtn = document.getElementById("shuffleCardsBtn");
+
+  const openCheatSheetBtn = document.getElementById("openCheatSheetBtn");
+  const cheatSheetModal = document.getElementById("cheatSheetModal");
+  const closeCheatSheetModal = document.getElementById("closeCheatSheetModal");
+  const closeCheatSheetBottomBtn = document.getElementById("closeCheatSheetBottomBtn");
+
+  const navGridModal = document.getElementById("navGridModal");
+  const closeNavGridModal = document.getElementById("closeNavGridModal");
+  const doneNavGridBtn = document.getElementById("doneNavGridBtn");
+  const navGridBoxes = document.getElementById("navGridBoxes");
 
   const openCustomBuilderBtn = document.getElementById("openCustomBuilderBtn");
   const customBuilderModal = document.getElementById("customBuilderModal");
@@ -103,7 +168,7 @@
   // Initialization
   // ===========================================================================
   async function init() {
-    loadLocalProgress();
+    loadCleanProgress();
     restoreAuthSession();
     await loadQuestionsData();
     updateDashboardUI();
@@ -114,13 +179,12 @@
   }
 
   // ===========================================================================
-  // Data Loading
+  // Clean Data Loading
   // ===========================================================================
   async function loadQuestionsData() {
     const questions = [];
     const seen = new Set();
 
-    // Fetch exam JSON files from data directory
     for (let i = 1; i <= 10; i++) {
       const pad = i < 10 ? `0${i}` : `${i}`;
       try {
@@ -134,43 +198,40 @@
             }
           }
         }
-      } catch (e) {
-        // Fallback handled silently
-      }
+      } catch (e) {}
     }
     allQuestions = questions;
   }
 
-  // ===========================================================================
-  // Local Progress Management
-  // ===========================================================================
-  function loadLocalProgress() {
+  function loadCleanProgress() {
     const raw = localStorage.getItem("tf_exam_progress");
     if (raw) {
       try {
-        userProgress = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        // If it was the old seeded mock data, purge it cleanly
+        if (parsed.history && parsed.history.length === 1 && parsed.history[0].title === "Diagnostic Baseline Assessment" && Object.keys(parsed.questionStats || {}).length === 0) {
+          localStorage.removeItem("tf_exam_progress");
+        } else {
+          userProgress = {
+            history: parsed.history || [],
+            questionStats: parsed.questionStats || {},
+            domainStats: parsed.domainStats || {},
+            missedQuestions: parsed.missedQuestions || [],
+            starredQuestions: parsed.starredQuestions || []
+          };
+          return;
+        }
       } catch (e) {}
     }
 
-    // Seed baseline from initial exam if fresh (Domain 4: 50%, Domain 8: 64% as shown in screenshot)
-    if (!userProgress.history || userProgress.history.length === 0) {
-      userProgress.domainStats = {
-        "Domain 1: Understand Infrastructure as Code (IaC) Concepts": { attempts: 1, correct: 1 },
-        "Domain 3: Understand Terraform Basics": { attempts: 1, correct: 1 },
-        "Domain 6: Use the Core Terraform Workflow": { attempts: 1, correct: 1 },
-        "Domain 4: Use Terraform Outside the Core Workflow": { attempts: 6, correct: 3 },
-        "Domain 8: Read, Generate, and Modify Configuration": { attempts: 11, correct: 7 },
-        "Domain 7: Implement and Maintain State": { attempts: 2, correct: 2 },
-        "Domain 5: Interact with Terraform Modules": { attempts: 2, correct: 2 },
-        "Domain 9: Understand Terraform Cloud/Enterprise Capabilities": { attempts: 1, correct: 1 }
-      };
-      userProgress.history = [{
-        exam_id: "1",
-        title: "Diagnostic Baseline Assessment",
-        score_percentage: 72,
-        created_at: new Date().toISOString()
-      }];
-    }
+    // Default clean state
+    userProgress = {
+      history: [],
+      questionStats: {},
+      domainStats: {},
+      missedQuestions: [],
+      starredQuestions: []
+    };
   }
 
   function saveLocalProgress() {
@@ -192,9 +253,9 @@
         const data = await resp.json();
         syncStat.innerText = "Cloud Synced 🟢";
         readinessDial.innerText = `${data.readiness_score || 0}%`;
-        readinessStatus.innerText = data.verdict || "Assessing...";
+        readinessStatus.innerText = data.verdict || "Ready to Begin";
       } else {
-        syncStat.innerText = "Local (Offline)";
+        syncStat.innerText = "Local Mode";
       }
     } catch (e) {
       syncStat.innerText = "Local Mode";
@@ -202,74 +263,140 @@
   }
 
   // ===========================================================================
-  // UI Dashboard Updates & Weak Area Detection
+  // Dashboard & Diagnostic UI
   // ===========================================================================
   function updateDashboardUI() {
-    // 1. Calculate accuracy and coverage
-    let totalAttempts = 0;
-    let totalCorrect = 0;
+    const questionsAttempted = Object.keys(userProgress.questionStats || {}).length;
+    const totalAvail = allQuestions.length || 250;
+    const coveragePct = (questionsAttempted / totalAvail) * 100;
+
+    let totalAttemptsCount = 0;
+    let totalCorrectCount = 0;
     const weakDomains = [];
 
     const labRecommendations = {
       "Domain 4: Use Terraform Outside the Core Workflow": ["Exercises 11, 12, 13, 14"],
       "Domain 8: Read, Generate, and Modify Configuration": ["Exercises 03, 07, 10, 15, 19"],
-      "Domain 7: Implement and Maintain State": ["Exercises 06, 13, 17, 18"]
+      "Domain 7: Implement and Maintain State": ["Exercises 06, 13, 17, 18"],
+      "Domain 5: Interact with Terraform Modules": ["Exercises 08, 09, 16"],
+      "Domain 3: Understand Terraform Basics": ["Exercises 01, 02, 06"],
+      "Domain 6: Use the Core Terraform Workflow": ["Exercises 01, 04, 05"],
+      "Domain 1: Understand Infrastructure as Code (IaC) Concepts": ["Exercises 01, 02"],
+      "Domain 2: Understand Terraform's Purpose": ["Exercises 01, 06"],
+      "Domain 9: Understand Terraform Cloud/Enterprise Capabilities": ["Exercises 13, 20, 21"]
     };
 
     const dStats = userProgress.domainStats || {};
     for (const [domain, stat] of Object.entries(dStats)) {
-      totalAttempts += stat.attempts || 0;
-      totalCorrect += stat.correct || 0;
+      totalAttemptsCount += stat.attempts || 0;
+      totalCorrectCount += stat.correct || 0;
       const acc = stat.attempts > 0 ? (stat.correct / stat.attempts) * 100 : 0;
-      if (acc < 70.0 && stat.attempts > 0) {
+      if (acc < 70.0 && stat.attempts >= 2) {
         weakDomains.push({ domain, accuracy: Math.round(acc) });
       }
     }
 
-    const accuracyPct = totalAttempts > 0 ? ((totalCorrect / totalAttempts) * 100).toFixed(1) : "0.0";
-    const questionsDone = Object.keys(userProgress.questionStats || {}).length || 25;
-    const totalAvail = allQuestions.length || 250;
-
-    coverageStat.innerText = `${questionsDone} / ${totalAvail}`;
+    const accuracyPct = totalAttemptsCount > 0 ? ((totalCorrectCount / totalAttemptsCount) * 100).toFixed(1) : "0.0";
+    coverageStat.innerText = `${questionsAttempted} / ${totalAvail}`;
     accuracyStat.innerText = `${accuracyPct}%`;
 
-    // Composite readiness
-    const coveragePct = (questionsDone / totalAvail) * 100;
-    const score = Math.min(100, Math.round((0.25 * coveragePct) + (0.50 * parseFloat(accuracyPct)) + (0.25 * (parseFloat(accuracyPct) >= 75 ? 100 : parseFloat(accuracyPct)))));
-    readinessDial.innerText = `${score}%`;
-
-    if (score >= 85 && parseFloat(accuracyPct) >= 80) {
-      readinessStatus.innerHTML = "🟢 EXAM READY";
-      readinessStatus.style.color = "var(--success)";
-      readinessAdvice.innerText = "High margin of safety. You are fully prepared to pass the HashiCorp Associate (004) exam!";
-    } else if (score >= 70 || parseFloat(accuracyPct) >= 70) {
-      readinessStatus.innerHTML = "⚠️ MARGINAL PASS";
-      readinessStatus.style.color = "var(--warning)";
-      readinessAdvice.innerText = "You reach passing mark (70%), but weak domains require reinforcement before test day.";
-    } else {
-      readinessStatus.innerHTML = "🔴 NOT READY";
-      readinessStatus.style.color = "var(--danger)";
-      readinessAdvice.innerText = "Below passing threshold. Focus on weak domains and clear missed questions.";
-    }
-
-    // 2. Render Weak Areas Spotlight Banner
-    if (weakDomains.length > 0) {
-      weakAreasBanner.style.display = "flex";
-      weakPillsContainer.innerHTML = weakDomains.map(w => 
-        `<span class="weak-pill">${w.domain.split(":")[0]}: ${w.accuracy}%</span>`
-      ).join(" ");
-
-      const labs = weakDomains.map(w => labRecommendations[w.domain] || "Exercises 01-07").flat();
-      recommendedLabsText.innerText = labs.join(" & ");
-    } else {
+    // Welcome Card vs Weak Areas Banner
+    if (questionsAttempted === 0) {
+      welcomeCard.style.display = "flex";
       weakAreasBanner.style.display = "none";
+      readinessDial.innerText = "0%";
+      readinessStatus.innerText = "Ready to Begin";
+      readinessAdvice.innerText = "Start with Exam 01 to establish your diagnostic baseline.";
+    } else {
+      welcomeCard.style.display = "none";
+      const score = Math.min(100, Math.round((0.25 * coveragePct) + (0.50 * parseFloat(accuracyPct)) + (0.25 * (parseFloat(accuracyPct) >= 75 ? 100 : parseFloat(accuracyPct)))));
+      readinessDial.innerText = `${score}%`;
+
+      if (score >= 85 && parseFloat(accuracyPct) >= 80) {
+        readinessStatus.innerHTML = "🟢 EXAM READY";
+        readinessStatus.style.color = "var(--success)";
+        readinessAdvice.innerText = "High margin of safety. You are fully prepared to pass the HashiCorp Associate (004) exam!";
+      } else if (score >= 70 || parseFloat(accuracyPct) >= 70) {
+        readinessStatus.innerHTML = "⚠️ MARGINAL PASS";
+        readinessStatus.style.color = "var(--warning)";
+        readinessAdvice.innerText = "You reach passing mark (70%), but weak domains require reinforcement before test day.";
+      } else {
+        readinessStatus.innerHTML = "🔴 NOT READY";
+        readinessStatus.style.color = "var(--danger)";
+        readinessAdvice.innerText = "Below passing threshold. Focus on weak domains and clear missed questions.";
+      }
+
+      // Show weak areas only if real weak areas exist
+      if (weakDomains.length > 0) {
+        weakAreasBanner.style.display = "flex";
+        weakPillsContainer.innerHTML = weakDomains.map(w => 
+          `<span class="weak-pill">${w.domain.split(":")[0]}: ${w.accuracy}%</span>`
+        ).join(" ");
+        const labs = weakDomains.map(w => labRecommendations[w.domain] || "Exercises 01-21").flat();
+        recommendedLabsText.innerText = labs.join(" & ");
+        scorecardDrillBtn.style.display = "inline-flex";
+      } else {
+        weakAreasBanner.style.display = "none";
+        scorecardDrillBtn.style.display = "none";
+      }
     }
+
+    // Update 5-Point Readiness Checklist
+    updateChecklistUI(questionsAttempted, parseFloat(accuracyPct), weakDomains);
+  }
+
+  function updateChecklistUI(qCount, acc, weakDomains) {
+    let completedCount = 0;
+
+    // 1. Coverage >= 80% (200+ questions)
+    const c1Pass = qCount >= 200;
+    setCheckItem(check1, c1Pass, `Coverage &ge; 80% (${qCount}/200)`);
+    if (c1Pass) completedCount++;
+
+    // 2. Accuracy >= 85%
+    const c2Pass = acc >= 85.0 && qCount >= 25;
+    setCheckItem(check2, c2Pass, `Accuracy &ge; 85% (${acc}%)`);
+    if (c2Pass) completedCount++;
+
+    // 3. No Domain Under 70%
+    const c3Pass = weakDomains.length === 0 && qCount >= 25;
+    setCheckItem(check3, c3Pass, c3Pass ? "No Domain Under 70% ✅" : `${weakDomains.length} Weak Domain(s)`);
+    if (c3Pass) completedCount++;
+
+    // 4. Missed Pool Cleared
+    const missedCount = Object.values(userProgress.questionStats || {}).filter(s => s.attempts > 0 && s.correct === 0).length;
+    const c4Pass = qCount > 0 && missedCount === 0;
+    setCheckItem(check4, c4Pass, c4Pass ? "Missed Pool Cleared ✅" : `${missedCount} Missed Qs to Clear`);
+    if (c4Pass) completedCount++;
+
+    // 5. Passed 57Q Timed Mock
+    const passedMock = (userProgress.history || []).some(h => (h.total_questions >= 50 || h.title.includes("57")) && h.score_percentage >= 80);
+    setCheckItem(check5, passedMock, passedMock ? "Passed 57Q Timed Mock ✅" : "Pass 57Q Timed Mock");
+    if (passedMock) completedCount++;
+
+    checklistScore.innerText = `${completedCount} / 5 Completed`;
+  }
+
+  function setCheckItem(el, passed, text) {
+    if (passed) {
+      el.className = "checklist-item check-done";
+      el.querySelector(".check-icon").innerText = "✅";
+    } else {
+      el.className = "checklist-item";
+      el.querySelector(".check-icon").innerText = "⭕";
+    }
+    el.querySelector("span:last-child").innerHTML = text;
   }
 
   // ===========================================================================
-  // Exam Engine
+  // Exam Engine (Study Mode vs Timed Exam Mode)
   // ===========================================================================
-  function startExam(title, questions) {
+  startDiagnosticBtn.onclick = () => {
+    const examQs = allQuestions.filter(q => q.id.startsWith("q1_"));
+    startExam("Exam 01 - Diagnostic Baseline Assessment", examQs.length > 0 ? examQs : allQuestions.slice(0, 25), false);
+  };
+
+  function startExam(title, questions, isTimed = false) {
     if (!questions || questions.length === 0) {
       alert("No questions found for this exam mode.");
       return;
@@ -277,7 +404,14 @@
 
     activeExam = { title, questions };
     activeExamIndex = 0;
-    currentAnswers = new Array(questions.length).fill(null);
+    isTimedExam = isTimed;
+    currentAnswers = questions.map(q => ({
+      question_id: q.id,
+      domain: q.domain,
+      selected: null,
+      is_correct: false,
+      flagged: false
+    }));
 
     dashboardView.style.display = "none";
     scorecardView.style.display = "none";
@@ -285,7 +419,39 @@
 
     activeExamTitle.innerText = title;
     totalQNum.innerText = questions.length;
+
+    // Timer setup for Timed Mock Mode
+    if (isTimedExam) {
+      examTimerContainer.style.display = "block";
+      examSecondsRemaining = Math.min(3600, questions.length * 70); // ~60 mins
+      updateTimerDisplay();
+      clearInterval(examTimerInterval);
+      examTimerInterval = setInterval(() => {
+        examSecondsRemaining--;
+        updateTimerDisplay();
+        if (examSecondsRemaining <= 0) {
+          clearInterval(examTimerInterval);
+          alert("⏱️ Time is up! Submitting exam now.");
+          finishExam();
+        }
+      }, 1000);
+    } else {
+      examTimerContainer.style.display = "none";
+      clearInterval(examTimerInterval);
+    }
+
     renderCurrentQuestion();
+  }
+
+  function updateTimerDisplay() {
+    const mins = Math.floor(examSecondsRemaining / 60);
+    const secs = examSecondsRemaining % 60;
+    examTimer.innerText = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    if (examSecondsRemaining < 600) {
+      examTimerContainer.classList.add("timer-urgent");
+    } else {
+      examTimerContainer.classList.remove("timer-urgent");
+    }
   }
 
   function renderCurrentQuestion() {
@@ -294,13 +460,21 @@
     qDomain.innerText = q.domain || "General";
     qText.innerText = q.question;
 
-    const existingAns = currentAnswers[activeExamIndex];
+    const ans = currentAnswers[activeExamIndex];
     optionsContainer.innerHTML = "";
     feedbackBox.style.display = "none";
 
-    // Update running score
-    const answeredCount = currentAnswers.filter(a => a !== null).length;
-    const correctCount = currentAnswers.filter(a => a && a.is_correct).length;
+    // Star & Flag states
+    const isStarred = (userProgress.starredQuestions || []).includes(q.id);
+    starQBtn.className = isStarred ? "star-btn starred" : "star-btn";
+    starQBtn.innerText = isStarred ? "⭐ Starred" : "⭐ Star";
+
+    flagQBtn.className = ans.flagged ? "flag-btn flagged" : "flag-btn";
+    flagQBtn.innerText = ans.flagged ? "🚩 Flagged" : "🚩 Flag for Review";
+
+    // Running Score
+    const answeredCount = currentAnswers.filter(a => a.selected !== null).length;
+    const correctCount = currentAnswers.filter(a => a.is_correct).length;
     runningScore.innerText = answeredCount > 0 ? `${Math.round((correctCount / answeredCount) * 100)}%` : "0%";
 
     (q.options || []).forEach(opt => {
@@ -309,12 +483,20 @@
       btn.className = "option-item";
       btn.innerHTML = `<span class="option-key">${letter}</span><span>${opt.substring(2).trim()}</span>`;
 
-      if (existingAns) {
+      if (ans.selected !== null) {
         btn.classList.add("locked");
-        if (letter === q.answer) {
-          btn.classList.add("correct");
-        } else if (letter === existingAns.selected) {
-          btn.classList.add("incorrect");
+        if (isTimedExam) {
+          // In Timed Mock Mode, do not show correct/incorrect during test
+          if (letter === ans.selected) {
+            btn.classList.add("selected");
+          }
+        } else {
+          // Study Mode: Instant Right/Wrong Feedback
+          if (letter === q.answer) {
+            btn.classList.add("correct");
+          } else if (letter === ans.selected) {
+            btn.classList.add("incorrect");
+          }
         }
       } else {
         btn.onclick = () => selectAnswer(q, letter);
@@ -323,8 +505,8 @@
       optionsContainer.appendChild(btn);
     });
 
-    if (existingAns) {
-      showFeedback(q, existingAns.is_correct);
+    if (!isTimedExam && ans.selected !== null) {
+      showFeedback(q, ans.is_correct);
     }
 
     prevQBtn.disabled = activeExamIndex === 0;
@@ -335,31 +517,30 @@
 
   function selectAnswer(q, selectedLetter) {
     const isCorrect = selectedLetter === q.answer;
-    currentAnswers[activeExamIndex] = {
-      question_id: q.id,
-      domain: q.domain,
-      selected: selectedLetter,
-      is_correct: isCorrect,
-      time_spent: 10
-    };
+    currentAnswers[activeExamIndex].selected = selectedLetter;
+    currentAnswers[activeExamIndex].is_correct = isCorrect;
 
-    // Instant Right/Wrong visual feedback on-the-fly
     const buttons = optionsContainer.querySelectorAll(".option-item");
     buttons.forEach(btn => {
       btn.classList.add("locked");
       const letter = btn.querySelector(".option-key").innerText;
-      if (letter === q.answer) {
-        btn.classList.add("correct");
-      } else if (letter === selectedLetter) {
-        btn.classList.add("incorrect");
+      if (isTimedExam) {
+        if (letter === selectedLetter) btn.classList.add("selected");
+      } else {
+        if (letter === q.answer) {
+          btn.classList.add("correct");
+        } else if (letter === selectedLetter) {
+          btn.classList.add("incorrect");
+        }
       }
     });
 
-    showFeedback(q, isCorrect);
+    if (!isTimedExam) {
+      showFeedback(q, isCorrect);
+    }
 
-    // Update running score meter
-    const answeredCount = currentAnswers.filter(a => a !== null).length;
-    const correctCount = currentAnswers.filter(a => a && a.is_correct).length;
+    const answeredCount = currentAnswers.filter(a => a.selected !== null).length;
+    const correctCount = currentAnswers.filter(a => a.is_correct).length;
     runningScore.innerText = `${Math.round((correctCount / answeredCount) * 100)}%`;
   }
 
@@ -367,9 +548,59 @@
     feedbackBox.style.display = "block";
     feedbackBox.className = `feedback-container ${isCorrect ? "fb-correct" : "fb-incorrect"}`;
     feedbackTitle.innerHTML = isCorrect ? "✅ Correct!" : "❌ Incorrect";
-    feedbackText.innerText = q.explanation || "Review the official HashiCorp Terraform 004 documentation for details.";
+    feedbackText.innerText = q.explanation || "Refer to the HashiCorp Terraform 004 documentation for details.";
     feedbackLab.innerText = q.recommended_exercise ? `🛠️ Reinforcing Exercise: exercises/${q.recommended_exercise}` : "";
   }
+
+  // Star & Flag Handlers
+  starQBtn.onclick = () => {
+    const q = activeExam.questions[activeExamIndex];
+    if (!userProgress.starredQuestions) userProgress.starredQuestions = [];
+    const idx = userProgress.starredQuestions.indexOf(q.id);
+    if (idx === -1) {
+      userProgress.starredQuestions.push(q.id);
+      starQBtn.className = "star-btn starred";
+      starQBtn.innerText = "⭐ Starred";
+    } else {
+      userProgress.starredQuestions.splice(idx, 1);
+      starQBtn.className = "star-btn";
+      starQBtn.innerText = "⭐ Star";
+    }
+    saveLocalProgress();
+  };
+
+  flagQBtn.onclick = () => {
+    const ans = currentAnswers[activeExamIndex];
+    ans.flagged = !ans.flagged;
+    flagQBtn.className = ans.flagged ? "flag-btn flagged" : "flag-btn";
+    flagQBtn.innerText = ans.flagged ? "🚩 Flagged" : "🚩 Flag for Review";
+  };
+
+  // Question Navigator Grid Modal
+  openNavGridBtn.onclick = () => {
+    navGridBoxes.innerHTML = "";
+    activeExam.questions.forEach((q, idx) => {
+      const box = document.createElement("button");
+      box.className = "grid-box";
+      box.innerText = idx + 1;
+      const ans = currentAnswers[idx];
+
+      if (idx === activeExamIndex) box.classList.add("active");
+      if (ans.selected !== null) box.classList.add("answered");
+      if (ans.flagged) box.classList.add("flagged");
+
+      box.onclick = () => {
+        activeExamIndex = idx;
+        navGridModal.style.display = "none";
+        renderCurrentQuestion();
+      };
+      navGridBoxes.appendChild(box);
+    });
+    navGridModal.style.display = "flex";
+  };
+
+  closeNavGridModal.onclick = () => navGridModal.style.display = "none";
+  doneNavGridBtn.onclick = () => navGridModal.style.display = "none";
 
   prevQBtn.onclick = () => {
     if (activeExamIndex > 0) {
@@ -386,19 +617,25 @@
   };
 
   quitExamBtn.onclick = () => {
-    if (confirm("Are you sure you want to exit? Your current test progress will be saved.")) {
+    if (confirm("Are you sure you want to exit? Your answered questions will be graded.")) {
+      clearInterval(examTimerInterval);
       finishExam();
     }
   };
 
-  submitExamBtn.onclick = finishExam;
+  submitExamBtn.onclick = () => {
+    clearInterval(examTimerInterval);
+    finishExam();
+  };
 
   // ===========================================================================
   // Exam Completion & Persistence
   // ===========================================================================
   async function finishExam() {
+    clearInterval(examTimerInterval);
+
     const totalQ = activeExam.questions.length;
-    const answered = currentAnswers.filter(a => a !== null);
+    const answered = currentAnswers.filter(a => a.selected !== null);
     const correct = answered.filter(a => a.is_correct).length;
     const scorePct = totalQ > 0 ? Math.round((correct / totalQ) * 100) : 0;
 
@@ -413,7 +650,7 @@
       }
     });
 
-    // Update local state
+    // Update real local state
     if (!userProgress.domainStats) userProgress.domainStats = {};
     for (const [d, s] of Object.entries(domainMap)) {
       if (!userProgress.domainStats[d]) userProgress.domainStats[d] = { attempts: 0, correct: 0 };
@@ -421,7 +658,6 @@
       userProgress.domainStats[d].correct += s.correct;
     }
 
-    // Update question-level tracking
     if (!userProgress.questionStats) userProgress.questionStats = {};
     answered.forEach(ans => {
       if (!userProgress.questionStats[ans.question_id]) {
@@ -429,6 +665,16 @@
       }
       userProgress.questionStats[ans.question_id].attempts++;
       if (ans.is_correct) userProgress.questionStats[ans.question_id].correct++;
+    });
+
+    if (!userProgress.history) userProgress.history = [];
+    userProgress.history.push({
+      exam_id: activeExam.title,
+      title: activeExam.title,
+      score_percentage: scorePct,
+      total_questions: totalQ,
+      correct_questions: correct,
+      created_at: new Date().toISOString()
     });
 
     saveLocalProgress();
@@ -469,14 +715,14 @@
     } else if (scorePct >= 70) {
       scorecardVerdict.className = "verdict-box verdict-border";
       scorecardVerdict.innerText = "⚠️ MARGINAL PASS (Review Recommended)";
-      scorecardSummary.innerText = "You reached the 70% passing mark, but narrow margins on weak domains indicate risk on test day.";
+      scorecardSummary.innerText = "You reached the 70% passing mark, but review weak domains to guarantee a high safety margin on test day.";
     } else {
       scorecardVerdict.className = "verdict-box verdict-fail";
       scorecardVerdict.innerText = "🔴 NOT READY (Below 70% Passing Threshold)";
-      scorecardSummary.innerText = "Additional targeted review is required before taking the official exam. Drill the weak domains below.";
+      scorecardSummary.innerText = "Focus on the weak domains identified below and clear missed questions before re-testing.";
     }
 
-    // Populate table
+    // Populate Scorecard Table
     domainBreakdownTbody.innerHTML = Object.entries(domainMap).map(([d, s]) => {
       const mastery = s.total > 0 ? Math.round((s.correct / s.total) * 100) : 0;
       const isPass = mastery >= 70;
@@ -504,43 +750,40 @@
     updateDashboardUI();
   };
 
-  scorecardDrillBtn.onclick = () => {
-    scorecardView.style.display = "none";
-    drillWeakAreas();
-  };
-
-  // ===========================================================================
-  // Custom Exam & Weak-Area Drills
-  // ===========================================================================
+  scorecardDrillBtn.onclick = drillWeakAreas;
   drillWeakBtn.onclick = drillWeakAreas;
 
   function drillWeakAreas() {
-    // Generate custom 15-question drill strictly targeting Domain 4 and Domain 8
-    const weakDomains = [
-      "Domain 4: Use Terraform Outside the Core Workflow",
-      "Domain 8: Read, Generate, and Modify Configuration"
-    ];
+    const weakDomains = [];
+    const dStats = userProgress.domainStats || {};
+    for (const [domain, stat] of Object.entries(dStats)) {
+      const acc = stat.attempts > 0 ? (stat.correct / stat.attempts) * 100 : 0;
+      if (acc < 70.0 && stat.attempts >= 1) weakDomains.push(domain);
+    }
+
+    if (weakDomains.length === 0) {
+      alert("No weak domains identified yet! Take a practice exam to diagnose your strengths.");
+      return;
+    }
 
     const candidates = allQuestions.filter(q => weakDomains.includes(q.domain));
     const shuffled = [...candidates].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 15);
-
-    startExam("⚡ Custom Weak-Area Drill (Domains 4 & 8)", selected);
+    startExam(`⚡ Weak-Area Drill (${shuffled.slice(0, 15).length} Questions)`, shuffled.slice(0, 15), false);
   }
 
+  // Action Buttons
   startSelectedExamBtn.onclick = () => {
     const examNum = examSelect.value;
     const title = examSelect.options[examSelect.selectedIndex].text;
     const prefix = `q${examNum}_`;
     const examQs = allQuestions.filter(q => q.id.startsWith(prefix));
-    startExam(title, examQs.length > 0 ? examQs : allQuestions.slice(0, 25));
+    startExam(title, examQs.length > 0 ? examQs : allQuestions.slice(0, 25), false);
   };
 
   start57MockBtn.onclick = () => {
-    // Randomized 57-question exam mirroring official 004 blueprint
+    // Official 57Q Timed Simulation Mode
     const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 57);
-    startExam("⏱️ Official 57-Question Mock Exam (Blueprint Weighted)", selected);
+    startExam("⏱️ Official 57-Question Timed Mock Exam", shuffled.slice(0, 57), true);
   };
 
   startMissedBtn.onclick = () => {
@@ -551,13 +794,123 @@
     );
     const missedQs = allQuestions.filter(q => missedIds.has(q.id));
     if (missedQs.length === 0) {
-      alert("🎉 Great job! You have no unanswered missed questions in your review pool.");
+      alert("🎉 You currently have 0 missed questions in your backlog!");
       return;
     }
-    startExam(`🔄 Missed Questions Review (${missedQs.length} Questions)`, missedQs);
+    startExam(`🔄 Missed Questions Review (${missedQs.length} Questions)`, missedQs, false);
   };
 
+  startStarredBtn.onclick = () => {
+    const starredIds = new Set(userProgress.starredQuestions || []);
+    const starredQs = allQuestions.filter(q => starredIds.has(q.id));
+    if (starredQs.length === 0) {
+      alert("You haven't bookmarked any questions yet. Click '⭐ Star' during exams to save questions here.");
+      return;
+    }
+    startExam(`⭐ Bookmarked Questions Practice (${starredQs.length} Questions)`, starredQs, false);
+  };
+
+  // Reset Progress Handler
+  resetAllDataBtn.onclick = () => {
+    if (confirm("Are you sure you want to reset all local progress? This will clear all session and domain data.")) {
+      localStorage.removeItem("tf_exam_progress");
+      loadCleanProgress();
+      updateDashboardUI();
+      alert("✅ All local progress reset. You have a fresh clean slate!");
+    }
+  };
+
+  // ===========================================================================
+  // 14-Day Study Plan Modal
+  // ===========================================================================
+  openRoadmapBtn.onclick = () => roadmapModal.style.display = "flex";
+  closeRoadmapModal.onclick = () => roadmapModal.style.display = "none";
+  closeRoadmapBottomBtn.onclick = () => roadmapModal.style.display = "none";
+
+  document.querySelectorAll(".start-roadmap-exam").forEach(btn => {
+    btn.onclick = () => {
+      const examNum = btn.getAttribute("data-exam");
+      roadmapModal.style.display = "none";
+      const prefix = `q${examNum}_`;
+      const examQs = allQuestions.filter(q => q.id.startsWith(prefix));
+      startExam(`Exam 0${examNum} (from 14-Day Roadmap)`, examQs.length > 0 ? examQs : allQuestions.slice(0, 25), false);
+    };
+  });
+
+  // ===========================================================================
+  // Interactive 50 Flashcards Modal
+  // ===========================================================================
+  openFlashcardsBtn.onclick = openFlashcards;
+  cardLaunchBtn.onclick = openFlashcards;
+  closeFlashcardModal.onclick = () => flashcardModal.style.display = "none";
+
+  function openFlashcards() {
+    activeCards = window.FLASHCARD_DATA || [];
+    currentCardIndex = 0;
+    cardTotal.innerText = activeCards.length;
+    renderFlashcard();
+    flashcardModal.style.display = "flex";
+  }
+
+  function renderFlashcard() {
+    if (!activeCards || activeCards.length === 0) return;
+    const card = activeCards[currentCardIndex];
+    cardNum.innerText = currentCardIndex + 1;
+    cardCategoryFront.innerText = card.category;
+    cardQuestionText.innerText = card.question;
+    cardCategoryBack.innerText = card.category;
+    cardAnswerText.innerText = card.answer;
+    flashcardInner.classList.remove("flipped");
+  }
+
+  flashcardWrapper.onclick = () => flashcardInner.classList.toggle("flipped");
+
+  prevCardBtn.onclick = () => {
+    if (currentCardIndex > 0) {
+      currentCardIndex--;
+      renderFlashcard();
+    }
+  };
+
+  nextCardBtn.onclick = () => {
+    if (currentCardIndex < activeCards.length - 1) {
+      currentCardIndex++;
+      renderFlashcard();
+    }
+  };
+
+  shuffleCardsBtn.onclick = () => {
+    activeCards = [...activeCards].sort(() => 0.5 - Math.random());
+    currentCardIndex = 0;
+    renderFlashcard();
+  };
+
+  document.querySelectorAll(".card-cat-btn").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".card-cat-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const cat = btn.getAttribute("data-cat");
+      if (cat === "all") {
+        activeCards = window.FLASHCARD_DATA;
+      } else {
+        activeCards = (window.FLASHCARD_DATA || []).filter(c => c.category === cat);
+      }
+      cardTotal.innerText = activeCards.length;
+      currentCardIndex = 0;
+      renderFlashcard();
+    };
+  });
+
+  // ===========================================================================
+  // Cheat Sheet Drawer Modal
+  // ===========================================================================
+  openCheatSheetBtn.onclick = () => cheatSheetModal.style.display = "flex";
+  closeCheatSheetModal.onclick = () => cheatSheetModal.style.display = "none";
+  closeCheatSheetBottomBtn.onclick = () => cheatSheetModal.style.display = "none";
+
+  // ===========================================================================
   // Custom Exam Builder
+  // ===========================================================================
   openCustomBuilderBtn.onclick = () => customBuilderModal.style.display = "flex";
   closeBuilderModal.onclick = () => customBuilderModal.style.display = "none";
   cancelBuilderBtn.onclick = () => customBuilderModal.style.display = "none";
@@ -576,11 +929,11 @@
     const selected = shuffled.slice(0, count);
 
     customBuilderModal.style.display = "none";
-    startExam(`Custom Selected Exam (${selected.length} Questions)`, selected);
+    startExam(`Custom Selected Exam (${selected.length} Questions)`, selected, false);
   };
 
   // ===========================================================================
-  // Authentication (Cognito REST API)
+  // Cognito Authentication
   // ===========================================================================
   openAuthBtn.onclick = () => {
     authModal.style.display = "flex";
@@ -588,7 +941,6 @@
   };
 
   closeAuthModal.onclick = () => authModal.style.display = "none";
-
   tabSignIn.onclick = () => showTab("signIn");
   tabSignUp.onclick = () => showTab("signUp");
   tabConfirm.onclick = () => showTab("confirm");
@@ -618,10 +970,7 @@
   }
 
   async function cognitoApiCall(target, body) {
-    if (!config.cognitoClientId) {
-      // Mock dev response
-      return { success: true };
-    }
+    if (!config.cognitoClientId) return { success: true };
     const resp = await fetch(`https://cognito-idp.${config.awsRegion}.amazonaws.com/`, {
       method: "POST",
       headers: {
@@ -631,9 +980,7 @@
       body: JSON.stringify(body)
     });
     const data = await resp.json();
-    if (!resp.ok) {
-      throw new Error(data.message || data.__type || "Cognito error");
-    }
+    if (!resp.ok) throw new Error(data.message || data.__type || "Cognito error");
     return data;
   }
 
@@ -656,8 +1003,7 @@
           accessToken: result.AuthenticationResult.AccessToken
         };
       } else {
-        // Dev mock user
-        currentUser = { email, idToken: "mock-jwt-token" };
+        currentUser = { email, idToken: "dev-jwt" };
       }
 
       localStorage.setItem("tf_auth_user", JSON.stringify(currentUser));
@@ -675,7 +1021,7 @@
     const password = document.getElementById("signUpPassword").value;
 
     try {
-      showAuthMessage("Creating account on AWS...", false);
+      showAuthMessage("Creating your account on AWS...", false);
       if (config.cognitoClientId) {
         await cognitoApiCall("SignUp", {
           ClientId: config.cognitoClientId,
@@ -684,7 +1030,7 @@
           UserAttributes: [{ Name: "email", Value: email }]
         });
       }
-      showAuthMessage("Account created! Enter the 6-digit verification code sent to your email.", false);
+      showAuthMessage("Account created! Check your email for your 6-digit verification code.", false);
       document.getElementById("confirmEmail").value = email;
       showTab("confirm");
     } catch (err) {
@@ -718,15 +1064,13 @@
     currentUser = null;
     localStorage.removeItem("tf_auth_user");
     updateAuthUI();
-    syncStat.innerText = "Local (Offline)";
+    syncStat.innerText = "Clean Slate 🟢";
   };
 
   function restoreAuthSession() {
     const raw = localStorage.getItem("tf_auth_user");
     if (raw) {
-      try {
-        currentUser = JSON.parse(raw);
-      } catch (e) {}
+      try { currentUser = JSON.parse(raw); } catch (e) {}
     }
     updateAuthUI();
   }

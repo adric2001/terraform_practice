@@ -15,10 +15,13 @@
         <span class="brand-icon">🚀</span>
         <div>
           <h1>Terraform Associate (004) Portal</h1>
-          <p>Cloud Readiness Engine &bull; Auto-Sync &bull; Weak-Area Drilling</p>
+          <p>2-Week Pass Engine &bull; Auto-Sync &bull; Weak-Area Drilling</p>
         </div>
       </div>
       <div class="auth-section">
+        <button id="openRoadmapBtn" class="btn" title="View 14-Day Study Plan">🗓️ 14-Day Plan</button>
+        <button id="openFlashcardsBtn" class="btn" title="50 High-Yield Flashcards">🃏 Flashcards</button>
+        <button id="openCheatSheetBtn" class="btn" title="004 Traps & Cheat Sheet">📖 Cheat Sheet</button>
         <div id="unauth-controls">
           <button id="openAuthBtn" class="btn btn-primary">Sign In / Register</button>
         </div>
@@ -37,8 +40,8 @@
       <div class="gauge-col">
         <div id="readinessDial" class="readiness-dial">0%</div>
         <div class="readiness-text">
-          <h3 id="readinessStatus">Assessing Readiness...</h3>
-          <p id="readinessAdvice">Complete practice exams to calculate your exam readiness score.</p>
+          <h3 id="readinessStatus">Ready to Begin</h3>
+          <p id="readinessAdvice">Start with Exam 01 to establish your diagnostic baseline.</p>
         </div>
       </div>
       <div class="ribbon-stats">
@@ -51,27 +54,72 @@
           <span class="lbl">Overall Accuracy</span>
         </div>
         <div class="ribbon-stat-item">
-          <span id="syncStat" class="val" style="color: var(--success); font-size: 1rem; margin-top: 4px;">Local / Ready</span>
+          <span id="syncStat" class="val" style="color: var(--success); font-size: 1rem; margin-top: 4px;">Clean Slate 🟢</span>
           <span class="lbl">Sync Status</span>
         </div>
       </div>
     </div>
 
-    <!-- Weak Areas Spotlight Banner -->
-    <div id="weakAreasBanner" class="weak-areas-banner">
+    <!-- Clean Start Welcome Card (Shown when 0 questions attempted) -->
+    <div id="welcomeCard" class="welcome-card">
+      <div class="welcome-info">
+        <h3>🎯 Start Your 2-Week Certification Sprint</h3>
+        <p>
+          Welcome to your personal Terraform Associate (004) prep portal. Your database and local storage are clean.
+          Follow the 14-day study sprint, review the 50 flashcards, and use practice exams with instant on-the-fly feedback to guarantee an &ge; 85% score on exam day.
+        </p>
+      </div>
+      <button id="startDiagnosticBtn" class="btn btn-primary" style="padding: 12px 20px; font-size: 1rem;">
+        🚀 Launch Exam 01 (Diagnostic Baseline)
+      </button>
+    </div>
+
+    <!-- Weak Areas Spotlight Banner (Shown ONLY when real weak domains exist) -->
+    <div id="weakAreasBanner" class="weak-areas-banner" style="display: none;">
       <div class="weak-header">
         <div class="weak-title">
           <span>⚠️ Weak Areas Detected:</span>
           <div id="weakPillsContainer" class="weak-pills">
-            <span class="weak-pill">Domain 4: Outside Core Workflow (50%)</span>
-            <span class="weak-pill">Domain 8: Configuration (64%)</span>
+            <!-- Populated dynamically based on actual user scores -->
           </div>
         </div>
         <button id="drillWeakBtn" class="btn btn-accent">⚡ Drill Weak Areas Now</button>
       </div>
       <div id="recommendedLabsList" class="lab-recommendations">
         <span>🛠️ Recommended Exercises to Reinforce:</span>
-        <span id="recommendedLabsText">Exercises 11, 12, 13 (Domain 4) & Exercises 03, 07, 10, 15 (Domain 8)</span>
+        <span id="recommendedLabsText">Exercises 01-21</span>
+      </div>
+    </div>
+
+    <!-- 5-Point Readiness Checklist -->
+    <div class="checklist-card">
+      <div class="checklist-header">
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <span>🏆 Exam Readiness Checklist (Goal: 5 / 5)</span>
+        </h4>
+        <span id="checklistScore" style="font-size: 0.85rem; color: var(--accent); font-weight: 700;">0 / 5 Completed</span>
+      </div>
+      <div class="checklist-grid">
+        <div id="check1" class="checklist-item">
+          <span class="check-icon">⭕</span>
+          <span>Coverage &ge; 80% (200+ Qs)</span>
+        </div>
+        <div id="check2" class="checklist-item">
+          <span class="check-icon">⭕</span>
+          <span>Accuracy &ge; 85%</span>
+        </div>
+        <div id="check3" class="checklist-item">
+          <span class="check-icon">⭕</span>
+          <span>No Domain Under 70%</span>
+        </div>
+        <div id="check4" class="checklist-item">
+          <span class="check-icon">⭕</span>
+          <span>Missed Pool Cleared</span>
+        </div>
+        <div id="check5" class="checklist-item">
+          <span class="check-icon">⭕</span>
+          <span>Passed 57Q Timed Mock</span>
+        </div>
       </div>
     </div>
 
@@ -83,8 +131,8 @@
           <div class="action-card-header">
             <div class="action-card-icon">📝</div>
             <div class="action-card-info">
-              <h4>10 Full Practice Exams</h4>
-              <p>25-question modular assessments covering all official 004 objectives.</p>
+              <h4>10 Modular Practice Exams</h4>
+              <p>25-question exams with on-the-fly right/wrong feedback and in-depth explanations.</p>
             </div>
           </div>
           <div style="display: flex; gap: 8px;">
@@ -109,11 +157,11 @@
           <div class="action-card-header">
             <div class="action-card-icon">⏱️</div>
             <div class="action-card-info">
-              <h4>Official 57-Question Mock</h4>
-              <p>Mirrors the exact domain weighting of the real HashiCorp 004 exam.</p>
+              <h4>Official 57-Question Timed Mock</h4>
+              <p>Exact 60-minute simulation with question flagging & review navigation grid.</p>
             </div>
           </div>
-          <button id="start57MockBtn" class="btn btn-primary" style="width: 100%;">Launch 57Q Mock (60 Min)</button>
+          <button id="start57MockBtn" class="btn btn-primary" style="width: 100%;">Launch 57Q Timed Simulation</button>
         </div>
 
         <!-- 3. Spaced Repetition -->
@@ -128,17 +176,48 @@
           <button id="startMissedBtn" class="btn btn-accent" style="width: 100%;">Review Missed Questions</button>
         </div>
 
-        <!-- 4. Custom Exam Builder -->
+        <!-- 4. Starred Questions -->
+        <div class="action-card">
+          <div class="action-card-header">
+            <div class="action-card-icon">⭐</div>
+            <div class="action-card-info">
+              <h4>Bookmarked / Starred Questions</h4>
+              <p>Review difficult questions you saved during study sessions.</p>
+            </div>
+          </div>
+          <button id="startStarredBtn" class="btn" style="width: 100%;">Practice Starred Questions</button>
+        </div>
+
+        <!-- 5. 50 Flashcards -->
+        <div class="action-card">
+          <div class="action-card-header">
+            <div class="action-card-icon">🃏</div>
+            <div class="action-card-info">
+              <h4>50 High-Yield Flashcards</h4>
+              <p>Rapid recall cards covering variable precedence, built-ins, and 004 traps.</p>
+            </div>
+          </div>
+          <button id="cardLaunchBtn" class="btn" style="width: 100%;">Open Flashcard Trainer</button>
+        </div>
+
+        <!-- 6. Custom Exam Builder -->
         <div class="action-card">
           <div class="action-card-header">
             <div class="action-card-icon">⚙️</div>
             <div class="action-card-info">
               <h4>Custom Exam Builder</h4>
-              <p>Filter by specific domains, select question counts, and toggle study modes.</p>
+              <p>Pick domains, choose question count (5-50), and toggle test modes.</p>
             </div>
           </div>
           <button id="openCustomBuilderBtn" class="btn" style="width: 100%;">Build Custom Exam</button>
         </div>
+      </div>
+      
+      <!-- Reset Helper Link -->
+      <div style="text-align: center; margin-top: 25px;">
+        <button id="resetAllDataBtn" class="btn" style="color: var(--text-muted); font-size: 0.8rem; border: none; background: transparent;">
+          🗑️ Reset All Local Data & Start Clean
+        </button>
       </div>
     </main>
 
@@ -149,13 +228,25 @@
           <strong id="activeExamTitle">Exam Title</strong> &bull; 
           Question <span id="currentQNum">1</span> of <span id="totalQNum">25</span>
         </div>
-        <div>
-          Running Score: <strong id="runningScore" style="color: var(--accent);">0%</strong>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div id="examTimerContainer" style="display: none; font-weight: 700; color: #38bdf8;">
+            ⏱️ <span id="examTimer">60:00</span>
+          </div>
+          <div>
+            Running Score: <strong id="runningScore" style="color: var(--accent);">0%</strong>
+          </div>
         </div>
       </div>
 
       <div class="question-card">
-        <div id="qDomain" class="q-domain-tag">Domain 1</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div id="qDomain" class="q-domain-tag">Domain 1</div>
+          <div class="q-action-btns">
+            <button id="starQBtn" class="star-btn" title="Bookmark Question">⭐ Star</button>
+            <button id="flagQBtn" class="flag-btn" title="Flag for Review">🚩 Flag for Review</button>
+          </div>
+        </div>
+
         <div id="qText" class="q-text">Question text goes here?</div>
 
         <div id="optionsContainer" class="options-list">
@@ -172,7 +263,8 @@
 
       <div class="exam-controls">
         <button id="prevQBtn" class="btn" disabled>&larr; Previous</button>
-        <button id="quitExamBtn" class="btn" style="color: var(--danger);">Exit Exam</button>
+        <button id="openNavGridBtn" class="btn" style="background: #1e293b;">📋 Question Navigator</button>
+        <button id="quitExamBtn" class="btn" style="color: var(--danger);">Exit</button>
         <button id="nextQBtn" class="btn btn-primary">Next &rarr;</button>
         <button id="submitExamBtn" class="btn btn-primary" style="display: none; background: var(--success); border-color: var(--success);">Finish & View Scorecard</button>
       </div>
@@ -202,11 +294,207 @@
         </tbody>
       </table>
 
-      <div style="display: flex; justify-content: center; gap: 12px; margin-top: 25px;">
+      <div style="display: flex; justify-content: center; gap: 12px; margin-top: 25px; flex-wrap: wrap;">
         <button id="scorecardReturnBtn" class="btn">Return to Dashboard</button>
-        <button id="scorecardDrillBtn" class="btn btn-accent">⚡ Drill Weak Areas Now</button>
+        <button id="scorecardDrillBtn" class="btn btn-accent" style="display: none;">⚡ Drill Weak Areas Now</button>
       </div>
     </section>
+  </div>
+
+  <!-- Question Navigator Grid Modal (57 Boxes) -->
+  <div id="navGridModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 620px;">
+      <div class="modal-header">
+        <h3>Question Navigator</h3>
+        <button id="closeNavGridModal" class="modal-close">&times;</button>
+      </div>
+      <div style="display: flex; gap: 15px; font-size: 0.85rem; margin-bottom: 12px;">
+        <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; background: var(--primary); border-radius: 3px;"></span> Answered</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; background: #ea580c; border-radius: 3px;"></span> Flagged</span>
+        <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; background: #1e293b; border-radius: 3px;"></span> Unanswered</span>
+      </div>
+      <div id="navGridBoxes" class="nav-grid-modal">
+        <!-- 1 to N boxes populated dynamically -->
+      </div>
+      <button id="doneNavGridBtn" class="btn btn-primary" style="width: 100%;">Close Navigator</button>
+    </div>
+  </div>
+
+  <!-- Flashcard Trainer Modal -->
+  <div id="flashcardModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <h3>🃏 50 High-Yield 004 Flashcards</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Card <span id="cardNum">1</span> of <span id="cardTotal">50</span> &bull; Click to Flip</p>
+        </div>
+        <button id="closeFlashcardModal" class="modal-close">&times;</button>
+      </div>
+
+      <!-- Category Filter -->
+      <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
+        <button class="btn card-cat-btn active" data-cat="all">All (50)</button>
+        <button class="btn card-cat-btn" data-cat="Core IaC & Architecture">IaC Core</button>
+        <button class="btn card-cat-btn" data-cat="CLI Workflow">CLI</button>
+        <button class="btn card-cat-btn" data-cat="State Management">State</button>
+        <button class="btn card-cat-btn" data-cat="Variables & Precedence">Variables</button>
+        <button class="btn card-cat-btn" data-cat="004 Modern Features">004 Modern</button>
+      </div>
+
+      <!-- 3D Interactive Card -->
+      <div id="flashcardWrapper" class="flashcard-wrapper">
+        <div id="flashcardInner" class="flashcard-inner">
+          <div class="flashcard-front">
+            <span id="cardCategoryFront" class="flashcard-cat">Category</span>
+            <p id="cardQuestionText" class="flashcard-text">Question goes here...</p>
+            <span style="margin-top: 20px; font-size: 0.8rem; color: var(--accent);">🔄 Click or press Space to reveal answer</span>
+          </div>
+          <div class="flashcard-back">
+            <span id="cardCategoryBack" class="flashcard-cat">Category</span>
+            <p id="cardAnswerText" class="flashcard-text" style="white-space: pre-line; font-size: 1rem;">Answer goes here...</p>
+            <span style="margin-top: 20px; font-size: 0.8rem; color: var(--accent);">🔄 Click to flip back</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flashcard Controls -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+        <button id="prevCardBtn" class="btn">&larr; Previous</button>
+        <button id="shuffleCardsBtn" class="btn">🔀 Shuffle</button>
+        <button id="nextCardBtn" class="btn btn-primary">Next &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14-Day Roadmap Modal -->
+  <div id="roadmapModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <h3>🗓️ 14-Day Exam Acceleration Roadmap</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Your step-by-step path to guaranteed 004 pass in 2 weeks</p>
+        </div>
+        <button id="closeRoadmapModal" class="modal-close">&times;</button>
+      </div>
+
+      <div class="roadmap-timeline">
+        <!-- Day 1-2 -->
+        <div class="roadmap-day-card">
+          <div>
+            <span class="day-badge">Days 1 – 2</span>
+            <h4 style="font-size: 0.95rem; color: #fff;">IaC Concepts & Core CLI Workflow</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Domains 1, 2, 3, 6 &bull; Exam 01 & 02 &bull; Labs 01, 02, 04, 05</p>
+          </div>
+          <button class="btn btn-primary start-roadmap-exam" data-exam="1" style="font-size: 0.8rem;">Start Exam 01</button>
+        </div>
+
+        <!-- Day 3-5 -->
+        <div class="roadmap-day-card">
+          <div>
+            <span class="day-badge">Days 3 – 5</span>
+            <h4 style="font-size: 0.95rem; color: #fff;">HCL Configuration, Variables & Functions</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Domain 8 &bull; Exam 03 &bull; Labs 03, 07, 10, 15</p>
+          </div>
+          <button class="btn start-roadmap-exam" data-exam="3" style="font-size: 0.8rem;">Start Exam 03</button>
+        </div>
+
+        <!-- Day 6-8 -->
+        <div class="roadmap-day-card">
+          <div>
+            <span class="day-badge">Days 6 – 8</span>
+            <h4 style="font-size: 0.95rem; color: #fff;">State Architecture, Remote Backends & Surgery</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Domain 7 &bull; Exam 04 &bull; Labs 06, 12, 13, 17, 18</p>
+          </div>
+          <button class="btn start-roadmap-exam" data-exam="4" style="font-size: 0.8rem;">Start Exam 04</button>
+        </div>
+
+        <!-- Day 9-10 -->
+        <div class="roadmap-day-card">
+          <div>
+            <span class="day-badge">Days 9 – 10</span>
+            <h4 style="font-size: 0.95rem; color: #fff;">Modules, Dependencies & Lifecycles</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Domains 4, 5 &bull; Exam 05 & 06 &bull; Labs 08, 09, 11, 14, 16</p>
+          </div>
+          <button class="btn start-roadmap-exam" data-exam="5" style="font-size: 0.8rem;">Start Exam 05</button>
+        </div>
+
+        <!-- Day 11-12 -->
+        <div class="roadmap-day-card">
+          <div>
+            <span class="day-badge">Days 11 – 12</span>
+            <h4 style="font-size: 0.95rem; color: #fff;">004 Modern Features & Cloud/Enterprise</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Domain 9, Moved, Import, Tests, Checks &bull; Exam 07, 08, 09 &bull; Labs 19, 20, 21</p>
+          </div>
+          <button class="btn start-roadmap-exam" data-exam="7" style="font-size: 0.8rem;">Start Exam 07</button>
+        </div>
+
+        <!-- Day 13-14 -->
+        <div class="roadmap-day-card">
+          <div>
+            <span class="day-badge">Days 13 – 14</span>
+            <h4 style="font-size: 0.95rem; color: #fff;">Full-Length 57Q Timed Mocks & Blitz</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">All Domains &bull; Exam 10 & Official 57Q Mock &bull; 50 Flashcards Review</p>
+          </div>
+          <button class="btn btn-accent start-roadmap-exam" data-exam="10" style="font-size: 0.8rem;">Start Final Mock</button>
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: 15px;">
+        <button id="closeRoadmapBottomBtn" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cheat Sheet Modal Drawer -->
+  <div id="cheatSheetModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 720px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div>
+          <h3>📖 004 High-Yield Cheat Sheet & Top Traps</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Instant cramming reference for tricky exam questions</p>
+        </div>
+        <button id="closeCheatSheetModal" class="modal-close">&times;</button>
+      </div>
+
+      <div class="cheatsheet-section">
+        <h4>⚡ Variable Definition Precedence Hierarchy (Highest to Lowest)</h4>
+        <table class="cheatsheet-table">
+          <tr><th>Rank</th><th>Source</th><th>Priority</th></tr>
+          <tr><td>1</td><td>CLI Flag: <code>-var</code> or <code>-var-file</code></td><td><strong>HIGHEST (Wins)</strong></td></tr>
+          <tr><td>2</td><td><code>*.auto.tfvars</code> or <code>*.auto.tfvars.json</code> (alphabetical)</td><td>High</td></tr>
+          <tr><td>3</td><td><code>terraform.tfvars.json</code></td><td>Medium-High</td></tr>
+          <tr><td>4</td><td><code>terraform.tfvars</code></td><td>Medium</td></tr>
+          <tr><td>5</td><td>Environment Variables: <code>TF_VAR_&lt;name&gt;</code></td><td>Low</td></tr>
+          <tr><td>6</td><td>Default value in <code>variable {}</code> block</td><td><strong>LOWEST</strong></td></tr>
+        </table>
+      </div>
+
+      <div class="cheatsheet-section">
+        <h4>🚨 Top 5 Exam Traps & Gotchas</h4>
+        <table class="cheatsheet-table">
+          <tr><th>Trap Concept</th><th>What HashiCorp Tests</th><th>Correct Answer</th></tr>
+          <tr><td><code>sensitive = true</code></td><td>Does it encrypt state file?</td><td><strong>NO!</strong> Secrets are still plain text in <code>terraform.tfstate</code>.</td></tr>
+          <tr><td><code>terraform taint</code></td><td>Is taint recommended?</td><td><strong>DEPRECATED.</strong> Use <code>terraform apply -replace="address"</code>.</td></tr>
+          <tr><td><code>terraform refresh</code></td><td>Is standalone refresh safe?</td><td><strong>DEPRECATED.</strong> Use <code>terraform apply -refresh-only</code>.</td></tr>
+          <tr><td><code>check</code> vs <code>precondition</code></td><td>Execution halting behavior</td><td><code>check</code> yields <strong>warnings</strong>; <code>precondition</code> <strong>halts apply with error</strong>.</td></tr>
+          <tr><td><code>terraform_data</code></td><td>Does it need a provider?</td><td><strong>NO.</strong> Built into Core (replaces external <code>null_resource</code>).</td></tr>
+        </table>
+      </div>
+
+      <div class="cheatsheet-section">
+        <h4>🛠️ Essential Built-in Functions Reference</h4>
+        <table class="cheatsheet-table">
+          <tr><th>Function</th><th>Usage</th><th>Example Output</th></tr>
+          <tr><td><code>lookup(map, key, default)</code></td><td>Safely retrieve key or default</td><td><code>lookup({a=1}, "b", 99)</code> &rarr; <code>99</code></td></tr>
+          <tr><td><code>merge(map1, map2)</code></td><td>Combine maps; later keys win</td><td><code>merge({a=1}, {a=2})</code> &rarr; <code>{a=2}</code></td></tr>
+          <tr><td><code>flatten(list_of_lists)</code></td><td>Collapse nested lists</td><td><code>flatten([[1,2], [3]])</code> &rarr; <code>[1,2,3]</code></td></tr>
+          <tr><td><code>try(expr1, expr2)</code></td><td>Return first error-free value</td><td><code>try(local.bad, "ok")</code> &rarr; <code>"ok"</code></td></tr>
+          <tr><td><code>can(expression)</code></td><td>Test if expression succeeds</td><td><code>can(var.x.y)</code> &rarr; <code>true / false</code></td></tr>
+        </table>
+      </div>
+
+      <button id="closeCheatSheetBottomBtn" class="btn btn-primary" style="width: 100%;">Close Cheat Sheet</button>
+    </div>
   </div>
 
   <!-- Authentication Modal -->
@@ -292,7 +580,7 @@
             <input type="checkbox" class="domain-chk" value="Domain 3: Understand Terraform Basics"> Domain 3: Terraform Basics
           </label>
           <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
-            <input type="checkbox" class="domain-chk" value="Domain 4: Use Terraform Outside the Core Workflow" checked> Domain 4: Outside Core Workflow (Weak)
+            <input type="checkbox" class="domain-chk" value="Domain 4: Use Terraform Outside the Core Workflow" checked> Domain 4: Outside Core Workflow
           </label>
           <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
             <input type="checkbox" class="domain-chk" value="Domain 5: Interact with Terraform Modules"> Domain 5: Modules & Registries
@@ -304,7 +592,7 @@
             <input type="checkbox" class="domain-chk" value="Domain 7: Implement and Maintain State"> Domain 7: State Management
           </label>
           <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
-            <input type="checkbox" class="domain-chk" value="Domain 8: Read, Generate, and Modify Configuration" checked> Domain 8: Configuration (Weak)
+            <input type="checkbox" class="domain-chk" value="Domain 8: Read, Generate, and Modify Configuration" checked> Domain 8: Configuration
           </label>
           <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
             <input type="checkbox" class="domain-chk" value="Domain 9: Understand Terraform Cloud/Enterprise Capabilities"> Domain 9: Cloud & Enterprise
@@ -320,6 +608,7 @@
   </div>
 
   <script src="config.js"></script>
+  <script src="flashcards.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
