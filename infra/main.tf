@@ -272,7 +272,7 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Scoped DynamoDB policy for Lambda
+# Scoped DynamoDB & Cognito policy for Lambda
 data "aws_iam_policy_document" "lambda_dynamo_policy" {
   statement {
     actions = [
@@ -287,6 +287,16 @@ data "aws_iam_policy_document" "lambda_dynamo_policy" {
     resources = [
       aws_dynamodb_table.sessions.arn,
       aws_dynamodb_table.questions.arn
+    ]
+  }
+
+  statement {
+    actions = [
+      "cognito-idp:ListUsers",
+      "cognito-idp:DescribeUserPool"
+    ]
+    resources = [
+      aws_cognito_user_pool.pool.arn
     ]
   }
 }
@@ -312,6 +322,7 @@ resource "aws_lambda_function" "api" {
     variables = {
       SESSIONS_TABLE  = aws_dynamodb_table.sessions.name
       QUESTIONS_TABLE = aws_dynamodb_table.questions.name
+      USER_POOL_ID    = aws_cognito_user_pool.pool.id
       APP_REGION      = var.aws_region
     }
   }
@@ -397,6 +408,13 @@ resource "aws_apigatewayv2_route" "route_custom_exam" {
 resource "aws_apigatewayv2_route" "route_health" {
   api_id    = aws_apigatewayv2_api.http_api.id
   route_key = "GET /api/health"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+}
+
+# Public Stats & Community Users Route
+resource "aws_apigatewayv2_route" "route_stats" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /api/stats"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 

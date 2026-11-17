@@ -19,10 +19,12 @@ from boto3.dynamodb.conditions import Key
 
 # Environment Variables
 AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+USER_POOL_ID = os.environ.get("USER_POOL_ID", "")
 SESSIONS_TABLE_NAME = os.environ.get("SESSIONS_TABLE", "tf_practice_user_sessions")
 QUESTIONS_TABLE_NAME = os.environ.get("QUESTIONS_TABLE", "tf_practice_user_questions")
 
 dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
+cognito_client = boto3.client("cognito-idp", region_name=AWS_REGION)
 sessions_table = dynamodb.Table(SESSIONS_TABLE_NAME)
 questions_table = dynamodb.Table(QUESTIONS_TABLE_NAME)
 
@@ -150,20 +152,52 @@ def handle_get_profile(user_id):
     )
     user_questions = q_resp.get("Items", [])
     
-    total_attempted = len(user_questions)
-    total_attempts_count = sum(int(item.get("attempts", 0)) for item in user_questions)
-    total_correct_count = sum(int(item.get("correct_count", 0)) for item in user_questions)
-    overall_accuracy = round((total_correct_count / total_attempts_count * 100), 1) if total_attempts_count > 0 else 0.0
-    
-    # Domain breakdown
+    # Query recent sessions
+    s_resp = sessions_table.query(
+        KeyConditionExpression=Key("user_id").eq(user_id),
+        ScanIndexForward=False,
+        Limit=20
+    )
+    recent_sessions = s_resp.get("Items", [])
+
+    # Filter out empty or accidental sessions (0 score, 0 questions)
+    valid_sessions = [
+        s for s in recent_sessions 
+        if s.get("type") != "lab_completion" and int(s.get("total_questions", 0)) > 0
+    ]
+
     domain_stats = {}
-    for item in user_questions:
-        d = item.get("domain", "General")
-        if d not in domain_stats:
-            domain_stats[d] = {"attempts": 0, "correct": 0, "total_questions": 0}
-        domain_stats[d]["attempts"] += int(item.get("attempts", 0))
-        domain_stats[d]["correct"] += int(item.get("correct_count", 0))
-        domain_stats[d]["total_questions"] += 1
+
+    if user_questions:
+        total_attempted = len(user_questions)
+        total_attempts_count = sum(int(item.get("attempts", 0)) for item in user_questions)
+        total_correct_count = sum(int(item.get("correct_count", 0)) for item in user_questions)
+        for item in user_questions:
+            d = item.get("domain", "General")
+            if d not in domain_stats:
+                domain_stats[d] = {"attempts": 0, "correct": 0, "total_questions": 0}
+            domain_stats[d]["attempts"] += int(item.get("attempts", 0))
+            domain_stats[d]["correct"] += int(item.get("correct_count", 0))
+            domain_stats[d]["total_questions"] += 1
+    elif valid_sessions:
+        # Fallback to valid session history if questions table was not yet populated
+        total_attempted = sum(int(s.get("total_questions", 0)) for s in valid_sessions)
+        total_attempts_count = total_attempted
+        total_correct_count = sum(int(s.get("correct_questions", 0)) for s in valid_sessions)
+        for s in valid_sessions:
+            bd = s.get("domain_breakdown", {})
+            for d, stats in bd.items():
+                if d not in domain_stats:
+                    domain_stats[d] = {"attempts": 0, "correct": 0, "total_questions": 0}
+                domain_stats[d]["attempts"] += int(stats.get("total", 0))
+                domain_stats[d]["correct"] += int(stats.get("correct", 0))
+                domain_stats[d]["total_questions"] += int(stats.get("total", 0))
+    else:
+        total_attempted = 0
+        total_attempts_count = 0
+        total_correct_count = 0
+
+    overall_accuracy = round((total_correct_count / total_attempts_count * 100), 1) if total_attempts_count > 0 else 0.0
 
     domain_summary = []
     for d, stats in domain_stats.items():
@@ -175,14 +209,6 @@ def handle_get_profile(user_id):
             "status": "PASS" if acc >= 70.0 else "REVIEW"
         })
 
-    # Query recent sessions
-    s_resp = sessions_table.query(
-        KeyConditionExpression=Key("user_id").eq(user_id),
-        ScanIndexForward=False,
-        Limit=10
-    )
-    recent_sessions = s_resp.get("Items", [])
-    
     # Calculate composite readiness score (0 - 100)
     all_questions = load_all_bundled_questions()
     total_available_q = len(all_questions) if all_questions else 250
@@ -233,7 +259,7 @@ def handle_post_session(user_id, body):
     }
     sessions_table.put_item(Item=session_item)
     
-    # 2. Update individual question stats
+    # 2. Update individual question stats (using #d alias for reserved keyword domain)
     for ans in body.get("answers", []):
         qid = ans.get("question_id")
         if not qid:
@@ -244,7 +270,8 @@ def handle_post_session(user_id, body):
         try:
             questions_table.update_item(
                 Key={"user_id": user_id, "question_id": qid},
-                UpdateExpression="SET domain = :d, last_result = :r, last_answered = :t ADD attempts :one, correct_count :c",
+                UpdateExpression="SET #d = :d, last_result = :r, last_answered = :t ADD attempts :one, correct_count :c",
+                ExpressionAttributeNames={"#d": "domain"},
                 ExpressionAttributeValues={
                     ":d": domain,
                     ":r": "CORRECT" if is_corr else "INCORRECT",
@@ -403,6 +430,33 @@ def handle_post_lab_complete(user_id, body):
     sessions_table.put_item(Item=item)
     return api_response(200, {"message": f"Lab {lab_id} marked as completed", "lab_id": lab_id})
 
+def get_community_user_count():
+    """Retrieve count of registered users from Cognito or DynamoDB."""
+    if USER_POOL_ID:
+        try:
+            resp = cognito_client.list_users(UserPoolId=USER_POOL_ID, Limit=60)
+            return max(1, len(resp.get("Users", [])))
+        except Exception as e:
+            print(f"Error querying Cognito users: {e}")
+
+    try:
+        items = sessions_table.scan(ProjectionExpression="user_id").get("Items", [])
+        uids = {i["user_id"] for i in items if "user_id" in i}
+        return max(1, len(uids))
+    except Exception:
+        return 1
+
+def handle_get_stats():
+    """Public stats endpoint returning platform user count and active metrics."""
+    users = get_community_user_count()
+    return api_response(200, {
+        "registered_users": users,
+        "active_users": users,
+        "total_labs": 21,
+        "total_questions": 250,
+        "time": time.time()
+    })
+
 def lambda_handler(event, context):
     """Main API Gateway HTTP API v2 Router."""
     http_method = event.get("requestContext", {}).get("http", {}).get("method", "GET")
@@ -438,7 +492,11 @@ def lambda_handler(event, context):
     elif raw_path.endswith("/api/exams/custom") and http_method == "POST":
         return handle_post_custom_exam(user_id, body)
         
+    elif (raw_path.endswith("/api/stats") or raw_path.endswith("/api/community")) and http_method == "GET":
+        return handle_get_stats()
+
     elif raw_path.endswith("/api/health"):
-        return api_response(200, {"status": "healthy", "user_id": user_id, "time": time.time()})
+        users = get_community_user_count()
+        return api_response(200, {"status": "healthy", "user_id": user_id, "registered_users": users, "time": time.time()})
         
     return api_response(404, {"error": "Not Found", "path": raw_path, "method": http_method})

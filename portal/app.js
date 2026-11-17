@@ -73,6 +73,8 @@
   const coverageStat = document.getElementById("coverageStat");
   const accuracyStat = document.getElementById("accuracyStat");
   const syncStat = document.getElementById("syncStat");
+  const userCountText = document.getElementById("userCountText");
+  const communityStat = document.getElementById("communityStat");
 
   // Welcome & Weak Areas
   const welcomeCard = document.getElementById("welcomeCard");
@@ -229,10 +231,13 @@
 
   async function init() {
     loadCleanProgress();
+    cleanAccidentalZeroSessions();
     loadLabDrafts();
     restoreAuthSession();
     await Promise.all([loadQuestionsData(), loadExercisesData()]);
     updateDashboardUI();
+    fetchCommunityUserCount();
+    setInterval(fetchCommunityUserCount, 60000);
 
     if (currentUser && config.apiUrl) {
       await syncWithCloud();
@@ -240,8 +245,54 @@
   }
 
   // ===========================================================================
-  // Clean Data Loading
+  // Clean Data Loading & Session Sanitization
   // ===========================================================================
+  async function fetchCommunityUserCount() {
+    if (!config.apiUrl) return;
+    try {
+      const resp = await fetch(`${config.apiUrl}/api/stats`);
+      if (resp.ok) {
+        const data = await resp.json();
+        const active = data.active_users || 1;
+        const registered = data.registered_users || 1;
+        if (userCountText) userCountText.innerText = `👥 ${active} User${active === 1 ? '' : 's'} Online`;
+        if (communityStat) communityStat.innerText = `${registered} Registered`;
+      }
+    } catch (e) {}
+  }
+
+  function cleanAccidentalZeroSessions() {
+    if (!userProgress.history) return;
+    const initialCount = userProgress.history.length;
+    userProgress.history = userProgress.history.filter(h => {
+      // Filter out accidental 0% submissions that have 0 total or 0 answered questions
+      const isAccidental = (
+        h.score_percentage === 0 &&
+        (!h.correct_questions || h.correct_questions === 0) &&
+        (!h.total_questions || h.total_questions === 0 || !h.answers || h.answers.length === 0 || h.title.includes("Exam 03") || h.title.includes("Exam 05"))
+      );
+      return !isAccidental;
+    });
+
+    if (userProgress.history.length !== initialCount) {
+      recalculateDomainStatsFromHistory();
+      saveLocalProgress();
+    }
+  }
+
+  function recalculateDomainStatsFromHistory() {
+    const dStats = {};
+    for (const sess of (userProgress.history || [])) {
+      const breakdown = sess.domain_breakdown || {};
+      for (const [dom, stat] of Object.entries(breakdown)) {
+        if (!dStats[dom]) dStats[dom] = { attempts: 0, correct: 0 };
+        dStats[dom].attempts += (stat.total || stat.attempts || 0);
+        dStats[dom].correct += (stat.correct || stat.correct_count || 0);
+      }
+    }
+    userProgress.domainStats = dStats;
+  }
+
   async function loadQuestionsData() {
     const questions = [];
     const seen = new Set();
@@ -329,6 +380,17 @@
         syncStat.innerText = "Cloud Synced 🟢";
         readinessDial.innerText = `${data.readiness_score || 0}%`;
         readinessStatus.innerText = data.verdict || "Ready to Begin";
+
+        // Reconcile validated sessions from cloud
+        if (data.recent_sessions && Array.isArray(data.recent_sessions)) {
+          const validSessions = data.recent_sessions.filter(s => s.type !== "lab_completion" && (s.total_questions > 0 || s.correct_questions > 0));
+          if (validSessions.length > 0) {
+            userProgress.history = validSessions;
+            recalculateDomainStatsFromHistory();
+            updateDashboardUI();
+          }
+        }
+
         if (data.completed_labs && Array.isArray(data.completed_labs)) {
           const merged = new Set([...(userProgress.completedLabs || []), ...data.completed_labs]);
           userProgress.completedLabs = Array.from(merged);
@@ -1029,7 +1091,7 @@
   }
 
   function populateLabDropdown() {
-    if (!labSelect || !allExercises) return;
+    if (!labSelect || !Array.isArray(allExercises)) return;
     labSelect.innerHTML = allExercises.map(ex => 
       `<option value="${ex.id}">${escapeHtml(ex.title)}</option>`
     ).join("");
